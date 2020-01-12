@@ -1,0 +1,28 @@
+body, input[type="text"] {
+	background-color: black;
+	color: white;
+}
+
+.inputEquation {
+    width: 100%;
+}
+
+.inputEquation tr td:first-child,
+.variables tr td:first-child input {
+    width: 5em;
+    text-align: right;
+}
+
+#txtEqn, #txtAns {
+	width: calc(100% - 1em);
+	padding: 0.2em 0.5em;
+}
+
+#txtAns,
+.txtVarName {
+	border: none;
+}
+
+/* #divStack {
+	display: none;
+} */
