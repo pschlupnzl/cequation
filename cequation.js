@@ -179,6 +179,117 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             "*unknown*");
     }
 
+    //===Units and Dimensions=================================
+    // VALIDUNIT: Valid characters in units (including prefixes)
+    const EQ_VALIDUNIT = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    // The dimensioned constants store an INDEX into the same
+    // array as used for the named constants. The ordering is
+    //  - Base units first; followed by
+    //  - Named units; followed by
+    //  - Units used in dimensioned constants
+    // Why? Because when VOTYP_UNIT  is evaluated, it expects
+    // a single value that is the index into the units list.
+    const EQSI_NUMDIM_SCL = 9;                  // number of base unit dimensions plus scale factor coefficients
+
+    const EQSI_NUMUNIT_BASE = 7;                // number of SI base units
+    const EQSI_NUMUNIT = 16;                    // total number named units for output (base plus derived)
+    const EQSI_NUMUNIT_INPUT = 26;              // number of units for input
+
+    const EQSI_NUMUNIT_CONST = 8;               // number of units for dimensioned constants
+
+    // typedef struct tagUNITBASE {                // this needs to be a STRUCT for TEqStack
+    // double d[EQSI_NUMUNIT_BASE];
+    // } UNITBASE;
+
+    const CEquationSIUnit = [
+        // kg      m      A      s      K     mol    cd    scale offset
+        // Values EARLIER in the table take precedence
+        //---SI Base Units---------------------------
+        [  1.0,     0,     0,     0,     0,     0,     0,    1.0,     0] //  0 EQSI_KG  = mass
+        [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0] //  1 EQSI_M   = length
+        [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0] //  2 EQSI_A   = electric current
+        [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0] //  3 EQSI_S   = time
+        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0] //  4 EQSI_K   = therm. temperature
+        [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0] //  5 EQSI_MOL = amount of substance
+        [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0] //  6 EQSI_CD  = lum. intensity
+        //---SI Derived Units------------------------
+        [  1.0,   2.0,     0,  -3.0,     0,     0,     0,    1.0,     0] //  7 W  = J/s
+        [  1.0,   2.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  8 J  = N m
+        [  1.0,  -1.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  9 Pa = N/m2
+        [  1.0,   1.0,     0,  -2.0,     0,     0,     0,    1.0,     0] // 10 N  = kg m /s2
+        [    0,     0,     0,  -1.0,     0,     0,     0,    1.0,     0] // 11 Hz = 1/s
+        [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0] // 12 C  = A s
+        [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0] // 13 V  = W/A
+        [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0] // 14 F  = C/V
+        [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0] // 15 Ohm= V/A
+        //---Allowed INPUT units only----------------
+        [  1.0,     0,     0,     0,     0,     0,     0,    1.0e-3,  0] // 16 g -> kg
+        [    0,   3.0,     0,     0,     0,     0,     0,    1.0e-3,  0] // 17 L -> m3
+        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,273.15] // 18 degC -> K
+        [    0,     0,     0, 0, 1.0, 0, 0, 5.0/9.0,273.15-5.0/9.0*32.0] // 19 degF -> K
+        [    0,   1.0,     0,     0,     0,     0,     0, 1609.344,   0] // 20 mi -> m
+        [    0,   1.0,     0,     0,     0,     0,     0, 1852.0,     0] // 21 nmi -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    0.9144,  0] // 22 yd -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    0.3048,  0] // 23 ft -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    2.54e-2, 0] // 24 in -> m
+        [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0] // 25 eV -> J
+
+
+        //---Dimensioned Constants-------------------
+        // Offset by NUMUNIT_INPUT
+        [    0,   1.0,     0,  -1.0,     0,     0,     0,    1.0,     0] //  0 c   = m/s
+        [ -1.0,  -3.0,   2.0,   4.0,     0,     0,     0,    1.0,     0] //  1 e0  = F/m
+        [  1.0,   1.0,  -2.0,  -2.0,     0,     0,     0,    1.0,     0] //  2 mu0 = N/A2
+        [ -1.0,   3.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  3 G   = m3/ kg s2
+        [  1.0,   2.0,     0,  -1.0,     0,     0,     0,    1.0,     0] //  4 h   = J s
+        [    0,     0,     0,     0,     0,  -1.0,     0,    1.0,     0] //  5 N_A = 1/mol
+        [  1.0,   2.0,     0,  -2.0,  -1.0,     0,     0,    1.0,     0] //  6 kB  = J/K
+        [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0] //  7 R   = J/K mol
+    ];
+
+    const CEquationSIUnitStr = [
+        // Base units . . . . . . | Derived units . . .          | Constants . .
+        "kg", "m", "A", "s", "K", "mol", "cd", "W", "J", "Pa", "N", "Hz", "C", "V", "F", "Ohm",
+        "g", "L", "degC", "degF", "mi", "nmi", "yd", "ft", "in", "eV", // input only units
+        "m/s", "F/m", "N/A2", "m3/kg s2", "J s", "/mol", "J/K", "J/K mol", // constants
+    ];
+
+    //---Prefixes-----------------------------------
+    const EQSI_NUMUNIT_PREFIX = 11;            // number of recognized prefixes
+    const EQSI_NUMUNIT_PREFIX_OUTPUT = 10;     // number of prefixes used in output
+
+    const CEquationSIUnitPrefix =
+        [1e12, 1e9, 1e6, 1e3, 100, 0.01, 1e-3, 1e-6, 1e-9, 1e-12, 1e-15];
+    const CEquationSIUnitPrefixStr = "TGMkhcmunpf";
+
+    // Used for auto-adjustment, disabled for now
+    //const double CEquationSIUnitPrefixOutput[EQSI_NUMUNIT_PREFIX_OUTPUT] =
+    //   {1e12,1e9,1e6,1e3,1,1e-3,1e-6,1e-9,1e-12,1e-15};
+    //const char CEquationSIUnitPrefixOutputStr[] = "TGMk*munpf";
+
+    //===Dimensioned Constants================================
+    const EQSI_NUMCONST = 17;                  // number of dimensioned constants
+    const CEquationSIConstUnitIndx = [
+                             -1,                  // pi = []
+        EQSI_NUMUNIT_INPUT +  0,                  // c = m/s
+                             15,                  // Z0 = Ohm
+        EQSI_NUMUNIT_INPUT +  1,                  // e0 = F/m
+        EQSI_NUMUNIT_INPUT +  2,                  // mu0 = N/A2
+        EQSI_NUMUNIT_INPUT +  3,                  // G = m3/kg s2
+        EQSI_NUMUNIT_INPUT +  4,                  // h = Js
+        EQSI_NUMUNIT_INPUT +  4,                  // hbar = Js
+                             12,                  // e = C
+                              0,                  // m_alpha = kg
+                              0,                  // m_e = kg
+                              0,                  // m_n = kg
+                              0,                  // m_p = kg
+                              0,                  // m_u = kg (atomic mass constant)
+        EQSI_NUMUNIT_INPUT +  5,                  // N_A = 1/mol Avogadro's
+        EQSI_NUMUNIT_INPUT +  6,                  // kB = J/K Boltzmann's
+        EQSI_NUMUNIT_INPUT +  7,                  // R = J / K mol
+    ];
+
     //---Constants----------------------------------
     const CEquationSIConst = [
         M_PI,                // pi
@@ -274,9 +385,9 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     const VOTYP_VAL = 0x01;          // valop is numeric value
     const VOTYP_OP = 0x02;          // valop is built-in operator or function
     const VOTYP_REF = 0x03;          // valop is index into variable array
-    //const VOTYP_UNIT           = 0x04;          // unit: immediate multiply by value (not used?)
+    const VOTYP_UNIT = 0x04;          // unit: immediate multiply by value (not used?)
     const VOTYP_NARGC = 0x05;          // n-argument count whenever bracket is closed
-    //const VOTYP_PREFIX         = 0x06;          // same effect as TYP_VAL (not used?)
+    const VOTYP_PREFIX = 0x06;          // same effect as TYP_VAL (not used?)
 
     /*********************************************************
     *  ErrorString
@@ -388,6 +499,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             else if (poEquation[iOp] == VOTYP_VAL) szRow += "Value=" + pvEquation[iOp];
             else if (poEquation[iOp] == VOTYP_OP) szRow += "Operator:" + OP2STR(pvEquation[iOp]);
             else if (poEquation[iOp] == VOTYP_REF) szRow += "Variable[" + pvEquation[iOp] + "]";
+            else if (poEquation[iOp] == VOTYP_UNIT) szRow += "Unit[" + puEquation[iOp] + "]";
             else if (poEquation[iOp] == VOTYP_NARGC) szRow += "nArgC=" + pvEquation[iOp];
             else szRow += "??Valop=" + poEquation[iOp];
             sz += szRow + "<BR>";
@@ -397,6 +509,18 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     }
 
 
+    /*********************************************************
+    * ParseEquationUnits                              Private
+    * Parses the  token at  the current equation  position in
+    * terms of recognized units. This might happen:
+    *  - After a number, when a binary  operator is expected,
+    *    e.g. "1.5 s"
+    *  - After a division sign, e.g. "3.1 V/A". In this case,
+    *    the number "1" is inserted to read "3.1 V / 1 A" and
+    *    the multiplication has higher precedence.
+    * Returns iThisScan
+    *********************************************************/
+    function _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff)
     /*********************************************************
     * Parse equation
     * Return value is an error code
@@ -854,9 +978,14 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     *********************************************************/
     function DoEquation(dVar) {
         var dsVals = new Array();                // RPN stack of values
+        var usUnits = new Array();               // RPN stack of unit factors
         var oThisValop, vThisValop, iThisValop;  // token being processed
         var iThisPt;                             // pointer into equation
         var iArg;                                // multi-arg loop counter
+        var uUnitZero;                           // zeros unit block for convenience
+        var uUnit;                               // result unit
+        var uUnit1;                              // argument 1 unit
+        var uUnit2;                              // argument 2 unit
         var dVal;                                // result value
         var dArg1;                               // argument 1 value
         var dArg2;                               // argument 2 value
@@ -876,6 +1005,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             switch (oThisValop) {
                 //===Store a value==================================
                 case VOTYP_VAL:
+                case VOTYP_PREFIX:
                     dsVals.push(vThisValop);
                     break;
 
