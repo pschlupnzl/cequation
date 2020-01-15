@@ -23,6 +23,10 @@ body, input[type="text"] {
 	border: none;
 }
 
+.monospace {
+	font-family: monospace;
+}
+
 /* #divStack {
 	display: none;
 } */

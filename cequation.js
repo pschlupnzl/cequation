@@ -206,46 +206,46 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         // kg      m      A      s      K     mol    cd    scale offset
         // Values EARLIER in the table take precedence
         //---SI Base Units---------------------------
-        [  1.0,     0,     0,     0,     0,     0,     0,    1.0,     0] //  0 EQSI_KG  = mass
-        [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0] //  1 EQSI_M   = length
-        [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0] //  2 EQSI_A   = electric current
-        [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0] //  3 EQSI_S   = time
-        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0] //  4 EQSI_K   = therm. temperature
-        [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0] //  5 EQSI_MOL = amount of substance
-        [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0] //  6 EQSI_CD  = lum. intensity
+        [  1.0,     0,     0,     0,     0,     0,     0,    1.0,     0], //  0 EQSI_KG  = mass
+        [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0], //  1 EQSI_M   = length
+        [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0], //  2 EQSI_A   = electric current
+        [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0], //  3 EQSI_S   = time
+        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0], //  4 EQSI_K   = therm. temperature
+        [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0], //  5 EQSI_MOL = amount of substance
+        [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0], //  6 EQSI_CD  = lum. intensity
         //---SI Derived Units------------------------
-        [  1.0,   2.0,     0,  -3.0,     0,     0,     0,    1.0,     0] //  7 W  = J/s
-        [  1.0,   2.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  8 J  = N m
-        [  1.0,  -1.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  9 Pa = N/m2
-        [  1.0,   1.0,     0,  -2.0,     0,     0,     0,    1.0,     0] // 10 N  = kg m /s2
-        [    0,     0,     0,  -1.0,     0,     0,     0,    1.0,     0] // 11 Hz = 1/s
-        [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0] // 12 C  = A s
-        [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0] // 13 V  = W/A
-        [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0] // 14 F  = C/V
-        [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0] // 15 Ohm= V/A
+        [  1.0,   2.0,     0,  -3.0,     0,     0,     0,    1.0,     0], //  7 W  = J/s
+        [  1.0,   2.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  8 J  = N m
+        [  1.0,  -1.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  9 Pa = N/m2
+        [  1.0,   1.0,     0,  -2.0,     0,     0,     0,    1.0,     0], // 10 N  = kg m /s2
+        [    0,     0,     0,  -1.0,     0,     0,     0,    1.0,     0], // 11 Hz = 1/s
+        [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0], // 12 C  = A s
+        [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0], // 13 V  = W/A
+        [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], // 14 F  = C/V
+        [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0], // 15 Ohm= V/A
         //---Allowed INPUT units only----------------
-        [  1.0,     0,     0,     0,     0,     0,     0,    1.0e-3,  0] // 16 g -> kg
-        [    0,   3.0,     0,     0,     0,     0,     0,    1.0e-3,  0] // 17 L -> m3
-        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,273.15] // 18 degC -> K
-        [    0,     0,     0, 0, 1.0, 0, 0, 5.0/9.0,273.15-5.0/9.0*32.0] // 19 degF -> K
-        [    0,   1.0,     0,     0,     0,     0,     0, 1609.344,   0] // 20 mi -> m
-        [    0,   1.0,     0,     0,     0,     0,     0, 1852.0,     0] // 21 nmi -> m
-        [    0,   1.0,     0,     0,     0,     0,     0,    0.9144,  0] // 22 yd -> m
-        [    0,   1.0,     0,     0,     0,     0,     0,    0.3048,  0] // 23 ft -> m
-        [    0,   1.0,     0,     0,     0,     0,     0,    2.54e-2, 0] // 24 in -> m
-        [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0] // 25 eV -> J
+        [  1.0,     0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 16 g -> kg
+        [    0,   3.0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 17 L -> m3
+        [    0,     0,     0,     0,   1.0,     0,     0,    1.0,273.15], // 18 degC -> K
+        [    0,     0,     0, 0, 1.0, 0, 0, 5.0/9.0,273.15-5.0/9.0*32.0], // 19 degF -> K
+        [    0,   1.0,     0,     0,     0,     0,     0, 1609.344,   0], // 20 mi -> m
+        [    0,   1.0,     0,     0,     0,     0,     0, 1852.0,     0], // 21 nmi -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    0.9144,  0], // 22 yd -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    0.3048,  0], // 23 ft -> m
+        [    0,   1.0,     0,     0,     0,     0,     0,    2.54e-2, 0], // 24 in -> m
+        [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0], // 25 eV -> J
 
 
         //---Dimensioned Constants-------------------
         // Offset by NUMUNIT_INPUT
-        [    0,   1.0,     0,  -1.0,     0,     0,     0,    1.0,     0] //  0 c   = m/s
-        [ -1.0,  -3.0,   2.0,   4.0,     0,     0,     0,    1.0,     0] //  1 e0  = F/m
-        [  1.0,   1.0,  -2.0,  -2.0,     0,     0,     0,    1.0,     0] //  2 mu0 = N/A2
-        [ -1.0,   3.0,     0,  -2.0,     0,     0,     0,    1.0,     0] //  3 G   = m3/ kg s2
-        [  1.0,   2.0,     0,  -1.0,     0,     0,     0,    1.0,     0] //  4 h   = J s
-        [    0,     0,     0,     0,     0,  -1.0,     0,    1.0,     0] //  5 N_A = 1/mol
-        [  1.0,   2.0,     0,  -2.0,  -1.0,     0,     0,    1.0,     0] //  6 kB  = J/K
-        [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0] //  7 R   = J/K mol
+        [    0,   1.0,     0,  -1.0,     0,     0,     0,    1.0,     0], //  0 c   = m/s
+        [ -1.0,  -3.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], //  1 e0  = F/m
+        [  1.0,   1.0,  -2.0,  -2.0,     0,     0,     0,    1.0,     0], //  2 mu0 = N/A2
+        [ -1.0,   3.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  3 G   = m3/ kg s2
+        [  1.0,   2.0,     0,  -1.0,     0,     0,     0,    1.0,     0], //  4 h   = J s
+        [    0,     0,     0,     0,     0,  -1.0,     0,    1.0,     0], //  5 N_A = 1/mol
+        [  1.0,   2.0,     0,  -2.0,  -1.0,     0,     0,    1.0,     0], //  6 kB  = J/K
+        [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0]  //  7 R   = J/K mol
     ];
 
     const CEquationSIUnitStr = [
@@ -566,7 +566,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         iThisOp = isOps.Peek(); while(iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
                         switch(iThisOp) {
                             case OP_DIV:                 // hanging / --> add "1"
-                                vosParsEqn.push({
+                                pvoEquation.push({
                                     uTyp: VOTYP_PREFIX, // scale factor
                                     dVal: 1.00,
                                     iPos: iThisPt
@@ -583,14 +583,13 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         }
                     } else {
                         iThisOp = iBrktOff + OP_BRACKETOFFSET; // do everthing higher than me
-                        v-- this? --v
-                        _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
+                        _ProcessOps(iThisOp, iBrktOff);
                     }
         
                     //---prefix---
                     if (iPrfx >= 0) {
                         if (iError != EQERR_NONE) return 0;
-                        vosParsEqn.push({
+                        pvoEquation.push({
                             uTyp: VOTYP_PREFIX, // scale factor
                             dVal: CEquationSIUnitPrefix[iPrfx],
                             iPos: iThisPt
@@ -603,13 +602,12 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                     iThisOp = isOps[iOps.length - 1]; while (iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
                     // TODO: v-- is this line correct?
                     iThisOp = OP_MUL + iBrktOff + (iThisOp == OP_DIV ? 1 : 0) * OP_BRACKETOFFSET;
-                    vosParsEqn.push({
+                    pvoEquation.push({
                         uTyp: VOTYP_UNIT,
                         iUnit: iUnit,
                         iPos: iThisPt       // store const's position
                     });
-                    v-- this? --v
-                    _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
+                    _ProcessOps(iThisOp, iBrktOff);
                     iThisScan = pszSt.length + ((iPrfx >= 0) ? 1 : 0); // length of this scan
                     iPrfx = -9999;                     // stop searching prefixes
                     break;                             // stop looking
@@ -950,7 +948,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         if (iError != EQERR_NONE) {
             szErrMsg = "";
             for (iThisPt = 0; iThisPt < iErrorLocation; iThisPt++) szErrMsg += " "; // leading spaces
-            szErrMsg += "| " + ErrorString(iError);
+            szErrMsg += "^ " + ErrorString(iError);
             txtAns.value = szErrMsg;
         }
         return (iError);
