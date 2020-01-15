@@ -841,8 +841,8 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                                 break;
                             }
                             if (CEquationNArgOpArgc[iNArgOp] < 0) {
-                                isOps.splice(isOps.length - iCnst, 0, iVrbl);
-                                isPos.splice(isOps.length - iCnst, 0, isPos[isPos.length - iCnst]);
+                                isOps.splice(iCnst, 0, iVrbl); // iCnst is negative.
+                                isPos.splice(iCnst, 0, isPos[isPos.length - iCnst]);
                                 ////                  isOps.InsertBack(iVrbl, iCnst);
                                 ////                  isPos.InsertBack(isPos.PeekBack(iCnst), iCnst);
                             }
