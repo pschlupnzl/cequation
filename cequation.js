@@ -334,9 +334,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     #########################################################*/
     var iError;                                 // error code
     var iErrorLocation;                         // source string error location
-    var poEquation;                             // operator stack
-    var pvEquation;                             // value stack
-    var piEquation;                             // operator location in source
+    var pvoEquation;                            // operator, value, location stack { uTyp, iPos, dVal, uOp, iRef, iUnit, iArgc }
     var szEquation;                             // equation source string
 
     var isPos;                                  // stack of operator positions (parse only)
@@ -380,16 +378,18 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var iOp, k, kMin;                        // loop counters
         var sz, szRow;                           // string
         sz = "<PRE>" + szEquation + "<BR>";
-        for (iOp = 0; iOp < poEquation.length; iOp++) { // each operator as row
+        for (iOp = 0; iOp < pvoEquation.length; iOp++) { // each operator as row
             szRow = "";
-            for (k = 0; k < piEquation[iOp]; k++) szRow += " "; // leading spaces
+            for (k = 0; k < pvoEquation[iOp].iPos; k++) szRow += " "; // leading spaces
             szRow += "|";
-            if (poEquation[iOp] == VOTYP_UNDEFINED) szRow += "!Undefined Valop";
-            else if (poEquation[iOp] == VOTYP_VAL) szRow += "Value=" + pvEquation[iOp];
-            else if (poEquation[iOp] == VOTYP_OP) szRow += "Operator:" + OP2STR(pvEquation[iOp]);
-            else if (poEquation[iOp] == VOTYP_REF) szRow += "Variable[" + pvEquation[iOp] + "]";
-            else if (poEquation[iOp] == VOTYP_NARGC) szRow += "nArgC=" + pvEquation[iOp];
-            else szRow += "??Valop=" + poEquation[iOp];
+            switch (pvoEquation[iOp].uTyp) {
+                case VOTYP_UNDEFINED: szRow += "!Undefined Valop"; break;
+                case VOTYP_VAL: szRow += "Value=" + pvoEquation[iOp].dVal; break;
+                case VOTYP_OP: szRow += "Operator:" + OP2STR(pvoEquation[iOp].uOp); break;
+                case VOTYP_REF: szRow += "Variable[" + pvoEquation[iOp].iRef + "]"; break;
+                case VOTYP_NARGC: szRow += "nArgC=" + pvoEquation[iOp].iArgc; break;
+                default: szRow += "??Valop=" + pvoEquation[iOp].uTyp;
+            }
             sz += szRow + "<BR>";
         }
         sz += "</PRE>"
@@ -415,16 +415,12 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var iVrbl;                            // variable / loop counter
         var cChar;                            // char buffer for binary op
         var iBrktOff;                         // bracket offset
-        var oThisValop;                       // operator for stack
-        var vThisValop;                       // value    for stack
-        var iThisValop;                       // location for stack
+        var voThisValop;                      // operator for stack
 
         var szErrMsg;                            // error message in answer box
 
         //===Prepare New Equation==============================
-        poEquation = new Array();                // start with empty operator..
-        pvEquation = new Array();                //..value, and..
-        piEquation = new Array();                //..position stacks
+        pvoEquation = [];                     // Operator stack.
         isPos = new Array();                // stack of operator positions
         isOps = new Array();                // stack of pending operations
         szEquation = _szEqtn;                    // store equation string for evaluation
@@ -464,9 +460,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                             iVrbl = 0;                   // start counting up variables
                             while (iVrbl < pszVars.length) { // stop at end of list
                                 if (_szEqtn.substr(iThisPt, iTokLen) == pszVars[iVrbl]) {
-                                    poEquation.push(VOTYP_REF);
-                                    pvEquation.push(iVrbl);
-                                    piEquation.push(iThisPt);
+                                    pvoEquation.push({
+                                        uTyp: VOTYP_REF,
+                                        iRef: iVrbl,
+                                        iPos: iThisPt
+                                    });
                                     iThisScan = iTokLen;   // length of this scan
                                     uLookFor = LOOKFOR_BINARYOP; // look for binary operator next
                                     break;
@@ -479,9 +477,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         //---constant---
                         for (iCnst = 0; iCnst < CEquationSIConst.length; iCnst++) {
                             if (_szEqtn.substr(iThisPt, iTokLen) == CEquationSIConstStr[iCnst]) {
-                                poEquation.push(VOTYP_VAL);
-                                pvEquation.push(CEquationSIConst[iCnst]);
-                                piEquation.push(iThisPt);  // store const's position
+                                pvoEquation.push({
+                                    uTyp: VOTYP_VAL,
+                                    dVal: CEquationSIConst[iCnst],
+                                    iPos: iThisPt  // store const's position
+                                });
                                 iThisScan = iTokLen;       // length of this scan
                                 uLookFor = LOOKFOR_BINARYOP; // look for binary operator next
                                 break;                       // stop looking
@@ -525,9 +525,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         // For sho':  -2^2 = -4 according to Matlab, so - sign must be
                         // processed before scanning for a number here
                     } else if (_szEqtn[iThisPt] == '-') {
-                        poEquation.push(VOTYP_VAL);
-                        pvEquation.push(-1.0000);
-                        piEquation.push(iThisPt);
+                        pvoEquation.push({
+                            uTyp: VOTYP_VAL,
+                            dVal: -1.0000,
+                            iPos: iThisPt
+                        });
                         isOps.push(OP_MUL + iBrktOff);
                         isPos.push(iThisPt);
                         iThisScan = 1;                  // size of this token
@@ -552,9 +554,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         iThisScan = dThisVal[1];           // length from scanFloat
                         dThisVal = dThisVal[0];           // value from scanFloat
                         if (iThisScan > 0) {
-                            poEquation.push(VOTYP_VAL);     // store value
-                            pvEquation.push(dThisVal);      // value from scanFloat
-                            piEquation.push(iThisPt);       // current position
+                            pvoEquation.push({
+                                uTyp: VOTYP_VAL,     // store value
+                                dVal: dThisVal,      // value from scanFloat
+                                iPos: iThisPt       // current position
+                            });
                             uLookFor = LOOKFOR_BINARYOP;    // look for binary operator next
                         } else {
                             iError = EQERR_PARSE_NUMBEREXPECTED;
@@ -634,14 +638,14 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         //---Assignment---------------------
                         if (iThisOp == OP_SET) {
                             ///TODO:Assignment flag               if(!AssignEnabled()) { iError = EQERR_PARSE_ASSIGNNOTALLOWED; break; };
-                            if ((poEquation.length <= 0) || (poEquation[poEquation.length - 1] != VOTYP_REF)) {
+                            if ((pvoEquation.length <= 0) || (pvoEquation[pvoEquation.length - 1].uTyp != VOTYP_REF)) {
                                 iError = EQERR_PARSE_ASSIGNNOTVAR;
                                 iThisPt--;
                                 break;
                             }
-                            poEquation.pop();                 // remove variable OP_REF from stack
-                            isOps.push(pvEquation.pop());     // store reference as "operator"
-                            isPos.push(piEquation.pop());     // source string location
+                            voThisValop = pvoEquation.pop();  // remove variable OP_REF from stack
+                            isOps.push(voThisValop.iRef);     // store reference as "operator"
+                            isPos.push(voThisValop.iPos);     // source string location
                         }
 
                         //---Push / Pops--------------------
@@ -771,9 +775,6 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     //int CEquation::_ProcessOps(TEqStack<VALOP> *pvosParsEqn, TEqStack<int> *pisOps, TEqStack<int> *pisPos, int iThisOp, int iBrktOff) {
     function _ProcessOps(iThisOp, iBrktOff) {
         var iPrevOp;                             // previous operator on stack
-        var oThisValop;                          // structure element added to equation stack
-        var vThisValop;
-        var iThisValop;
 
         do {
             if (isOps.length <= 0) break;          // exit when stack is empty
@@ -788,23 +789,29 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             //---Previous op------
             iPrevOp = isOps.pop();                // get previous operation
             while (iPrevOp >= OP_BRACKETOFFSET) iPrevOp -= OP_BRACKETOFFSET; // strip bracket levels
-            poEquation.push(VOTYP_OP);            // operator type
-            pvEquation.push(iPrevOp);             // operation
-            piEquation.push(isPos.pop());         // source string location
+            pvoEquation.push({
+                uTyp: VOTYP_OP,            // operator type
+                uOp: iPrevOp,             // operation
+                iPos: isPos.pop()         // source string location
+            });
 
             //---Set--------------
             if (iPrevOp == OP_SET) {
-                poEquation.push(VOTYP_REF);         // variable reference comes next
-                pvEquation.push(isOps.pop());       // variable ref earlier stored as "operator"
-                piEquation.push(isPos.pop());       // source string location
+                pvoEquation.push({
+                    uTyp: VOTYP_REF,         // variable reference comes next
+                    iRef: isOps.pop(),       // variable ref earlier stored as "operator"
+                    iPos: isPos.pop()       // source string location
+                });
             }
 
             //---Variable-arg-----
             iPrevOp -= OP_NARG;                   // offset to check for multi-arg op
             if ((iPrevOp >= 0) && (iPrevOp < NUM_NARGOP) && CEquationNArgOpArgc[iPrevOp] < 0) {
-                poEquation.push(VOTYP_NARGC);      // argument count type
-                pvEquation.push(isOps.pop());      // arg count was earlier stored as "operator"
-                piEquation.push(isPos.pop());      // source string location
+                pvoEquation.push({
+                    uTyp: VOTYP_NARGC,      // argument count type
+                    iArgc: isOps.pop(),      // arg count was earlier stored as "operator"
+                    iPos: isPos.pop()      // source string location
+                });
             }
         } while (1);                              // repeat until finished
         return (EQERR_NONE);
@@ -854,7 +861,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     *********************************************************/
     function DoEquation(dVar) {
         var dsVals = new Array();                // RPN stack of values
-        var oThisValop, vThisValop, iThisValop;  // token being processed
+        var voThisValop;                         // token being processed
         var iThisPt;                             // pointer into equation
         var iArg;                                // multi-arg loop counter
         var dVal;                                // result value
@@ -862,27 +869,25 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var dArg2;                               // argument 2 value
         var szErrMsg;                            // error message string
 
-        if (poEquation.length <= 0) return (iError = EQERR_EVAL_NOEQUATION);
+        if (pvoEquation.length <= 0) return (iError = EQERR_EVAL_NOEQUATION);
 
         iError = EQERR_NONE;                     // no error
-        for (iThisPt = 0; iThisPt < poEquation.length && iError == EQERR_NONE; iThisPt++) {
-            oThisValop = poEquation[iThisPt];     // current operator
-            vThisValop = pvEquation[iThisPt];     // current value
-            iThisValop = piEquation[iThisPt];     // current source location
+        for (iThisPt = 0; iThisPt < pvoEquation.length && iError == EQERR_NONE; iThisPt++) {
+            voThisValop = pvoEquation[iThisPt];     // current operator
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             // Simple Cases
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            switch (oThisValop) {
+            switch (voThisValop.uTyp) {
                 //===Store a value==================================
                 case VOTYP_VAL:
-                    dsVals.push(vThisValop);
+                    dsVals.push(voThisValop.dVal);
                     break;
 
                 //===Variable=======================================
                 case VOTYP_REF:
-                    if ((vThisValop >= 0) && (vThisValop < dVar.length)) {
-                        dsVals.push(dVar[vThisValop]); // save variable value
+                    if ((voThisValop.iRef >= 0) && (voThisValop.iRef < dVar.length)) {
+                        dsVals.push(dVar[voThisValop.iRef]); // save variable value
                     } else {                           // need supplied variable values
                         dsVals.push(0.000);
                         iError = EQERR_EVAL_CONTAINSVAR;
@@ -895,24 +900,24 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 case VOTYP_OP:
                     //===Assignment Operator=========================
-                    if (vThisValop == OP_SET) {
+                    if (voThisValop.uOp == OP_SET) {
                         ///TODO:Assign Flag            if((dVar==NULL) || (AssignEnabled()==FALSE)) { iError = EQERR_EVAL_ASSIGNNOTALLOWED; break; }
                         if (dsVals.length < 1) { iError = EQERR_EVAL_STACKUNDERFLOW; break; }
                         iThisPt++;                      // get variable reference from next
-                        if (iThisPt >= poEquation.length) { iError = EQERR_EVAL_STACKUNDERFLOW; break; }
-                        if (poEquation[iThisPt] != VOTYP_REF) { iError = EQERR_EVAL_BADTOKEN; break; }
-                        dVar[pvEquation[iThisPt]] = dsVals[dsVals.length - 1]; // assign (leave in stack)
+                        if (iThisPt >= pvoEquation.length) { iError = EQERR_EVAL_STACKUNDERFLOW; break; }
+                        if (pvoEquation[iThisPt].uTyp != VOTYP_REF) { iError = EQERR_EVAL_BADTOKEN; break; }
+                        dVar[pvoEquation[iThisPt].iRef] = dsVals[dsVals.length - 1]; // assign (leave in stack)
                         break;
                     }
 
                     //===Binary Operators============================
-                    if (vThisValop < OP_UNARY) {
+                    if (voThisValop.uOp < OP_UNARY) {
                         if (dsVals.length < 2) iError = EQERR_EVAL_STACKUNDERFLOW;
                         dArg2 = dsVals.pop();           // get second and..
                         dArg1 = dsVals.pop();           //..first arguments of op
 
                         //---Check easy math errors---------
-                        switch (vThisValop) {
+                        switch (voThisValop.uOp) {
                             case OP_DIV: if (dArg2 == 0) { dArg2 = 1.00; iError = EQERR_MATH_DIV_ZERO; } break;
                             case OP_POW:
                                 if (dArg1 < 0.00) dArg2 = floor(dArg2 + 0.50); // prevent fractions on negatives
@@ -921,7 +926,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         }
 
                         //---Perform Op---------------------
-                        switch (vThisValop) {
+                        switch (voThisValop.uOp) {
                             case OP_PSH: dsVals.push(dArg1); dVal = dArg2; break; // restore both to stack
                             case OP_POP: dVal = dArg2; break; // ignore first argument
                             case OP_ADD: dVal = dArg1 + dArg2; break;
@@ -941,11 +946,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         }
 
                         //===Unary Operators=============================
-                    } else if (vThisValop < OP_NARG) {
+                    } else if (voThisValop.uOp < OP_NARG) {
                         if (dsVals.length < 1) iError = EQERR_EVAL_STACKUNDERFLOW;
                         dArg1 = dsVals.pop();           // single function argument
 
-                        switch (vThisValop - OP_UNARY) {
+                        switch (voThisValop.uOp - OP_UNARY) {
                             //---Primitive Limits Checking----------------
                             case OP_ACOS:
                             case OP_ACOSD:
@@ -962,7 +967,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         }
 
                         //---Evaluate---------------------------------
-                        switch (vThisValop - OP_UNARY) {
+                        switch (voThisValop.uOp - OP_UNARY) {
                             case OP_ABS: dVal = Math.abs(dArg1); break;
                             case OP_SQRT: dVal = Math.sqrt(dArg1); break;
                             case OP_EXP: dVal = Math.exp(dArg1); break;
@@ -994,23 +999,23 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
                         //===N-Argument Operators========================
                     } else {
-                        if (dsVals.length < Math.abs(CEquationNArgOpArgc[vThisValop - OP_NARG])) iError = EQERR_EVAL_STACKUNDERFLOW;
+                        if (dsVals.length < Math.abs(CEquationNArgOpArgc[voThisValop.uOp - OP_NARG])) iError = EQERR_EVAL_STACKUNDERFLOW;
                         //---2-Argument---------------------
-                        if (CEquationNArgOpArgc[vThisValop - OP_NARG] == 2) {
+                        if (CEquationNArgOpArgc[voThisValop.uOp - OP_NARG] == 2) {
                             dArg2 = dsVals.pop();
                             dArg1 = dsVals.pop();
 
-                            switch (vThisValop - OP_NARG) {
+                            switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_MOD:            // see Matlab's definitions..
                                 case OP_NARG_REM:            //..of MOD and REM!
                                     if (dArg2 == 0.00) {
-                                        if ((vThisValop - OP_NARG) == OP_NARG_MOD) dVal = dArg1;
+                                        if ((voThisValop.uOp - OP_NARG) == OP_NARG_MOD) dVal = dArg1;
                                         else iError = EQERR_MATH_DIV_ZERO;
                                         break;
                                     }
 
                                     dVal = dArg1 - dArg2 * Math.floor(dArg1 / dArg2);
-                                    if ((vThisValop - OP_NARG) == OP_NARG_REM) {
+                                    if ((voThisValop.uOp - OP_NARG) == OP_NARG_REM) {
                                         //                     if(SIGN(dArg1) != SIGN(dArg2)) dVal -= dArg2;
                                         if (((dArg1 > 0.00) && (dArg2 < 0.00))
                                             || ((dArg1 < 0.00) && (dArg2 > 0.00))) dVal -= dArg2;
@@ -1023,24 +1028,24 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                                     dVal = (dArg2 == 0.00) ?
                                         ((dArg1 == 0.00) ? 0.00 : ((dArg1 > 0.00) ? M_PI / 2.00 : -M_PI / 2.00))
                                         : Math.atan2(dArg1, dArg2);
-                                    if ((vThisValop - OP_NARG) == OP_NARG_ATAN2D) dVal *= M_180_PI;
+                                    if ((voThisValop.uOp - OP_NARG) == OP_NARG_ATAN2D) dVal *= M_180_PI;
                                     break;
 
                                 default: iError = EQERR_EVAL_UNKNOWNNARGOP;
                             }
                             //---Variable-Argument--------------
-                        } else if (CEquationNArgOpArgc[vThisValop - OP_NARG] < 0) {
+                        } else if (CEquationNArgOpArgc[voThisValop.uOp - OP_NARG] < 0) {
                             iThisPt++;
-                            if (iThisPt >= poEquation.length) { iError = EQERR_EVAL_STACKUNDERFLOW; break; }
-                            if (poEquation[iThisPt] != VOTYP_NARGC) { iError = EQERR_EVAL_UNKNOWNNARGOP; break; }
-                            switch (vThisValop - OP_NARG) {
+                            if (iThisPt >= pvoEquation.length) { iError = EQERR_EVAL_STACKUNDERFLOW; break; }
+                            if (pvoEquation[iThisPt].uTyp != VOTYP_NARGC) { iError = EQERR_EVAL_UNKNOWNNARGOP; break; }
+                            switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_MAX:
                                 case OP_NARG_MIN:
                                     dVal = dsVals.pop();
-                                    for (iArg = 1; iArg < pvEquation[iThisPt]; iArg++) {
+                                    for (iArg = 1; iArg < pvoEquation[iThisPt].iArgc; iArg++) {
                                         dArg1 = dsVals.pop();
 
-                                        switch (vThisValop - OP_NARG) {
+                                        switch (voThisValop.uOp - OP_NARG) {
                                             case OP_NARG_MAX: if (dArg1 > dVal) dVal = dArg1; break;
                                             case OP_NARG_MIN: if (dArg1 < dVal) dVal = dArg1; break;
                                         }
@@ -1051,7 +1056,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                             }
                             //---Remaining N-Argument-----------
                         } else {
-                            switch (vThisValop - OP_NARG) {
+                            switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_IF:
                                     dArg2 = dsVals.pop(); // value-if-false
                                     dArg1 = dsVals.pop(); // value-if-true
@@ -1075,8 +1080,8 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         //===Error handling====================================
         if ((iError == EQERR_NONE) && (dsVals.length > 1)) iError = EQERR_EVAL_STACKNOTEMPTY;
         if (iError != EQERR_NONE) {
-            iErrorLocation = (iThisPt - 1 < poEquation.length) ? // store where processing failed..
-                piEquation[iThisPt - 1] : 0;
+            iErrorLocation = (iThisPt - 1 < pvoEquation.length) ? // store where processing failed..
+                pvoEquation[iThisPt - 1].iPos : 0;
 
             szErrMsg = "";
             for (iThisPt = 0; iThisPt < iErrorLocation; iThisPt++) szErrMsg += " "; // leading spaces
