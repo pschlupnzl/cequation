@@ -508,6 +508,27 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         divStack.innerHTML = sz;
     }
 
+    /*********************************************************
+    *  ContainsUnits
+    *  Returns TRUE if the equation contains at least one
+    *  unit. Retruns FALSE if no units are included, or if
+    *  no equation is defined
+    *  Sets iErrorPosition to point to where the found unit
+    *  occurs in the source equation
+    * NOTE - Units are not fully implemented in Rev. 4.1!
+    *********************************************************/
+    function ContainsUnits() {
+        var iThisPt;                             // loop counter
+    
+        if (iEqnLength <= 0) return(false);         // no equation defined
+        for (iThisPt = 0; iThisPt < iEqnLength; iThisPt += 1) {
+            if (pvoEquation[iThisPt].uTyp == VOTYP_UNIT) { // found a unit
+                iErrorLocation = pvoEquation[iThisPt].iPos; // point to position
+                return(true);
+            }
+        }
+        return(false);
+    }
 
     /*********************************************************
     * ParseEquationUnits                              Private
@@ -520,7 +541,93 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     *    the multiplication has higher precedence.
     * Returns iThisScan
     *********************************************************/
-    function _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff)
+   function _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, vosParsEqn, uLookFor) {
+        var iThisScan;                         // int   advance this scan location
+        var pszSt;                             // char *offset into character arrays
+        var iTokLen;                           // int   token length
+        var iPrfx;                             // int   prefix index
+        var iUnit;                             // int   loop counter
+        var iThisOp;                           // int   unit multiplier
+        // var voThisValop;                       // VALOP value/operator to push onto stack
+        var ipszSt = 0;                        // Loop over CEquationSIUnitStr
+        iThisScan =  0;                          // found no unit yet
+        iPrfx     = -1;                          // no prefix yet
+    
+        //---Get token length------------------------
+        for (iTokLen=1; (iThisPt + iTokLen < strlen(_szEqtn)) && strchr(EQ_VALIDUNIT, _szEqtn[iThisPt + iTokLen]); iTokLen += 1);
+        if (iTokLen <= 0) return 0;                // ignore bad token
+    
+        //---Scan for Unit---------------------------
+        do {                                     // search twice: once with and then without prefix
+            pszSt = CEquationSIUnitStr[ipszSt];      // start at beginning of string
+            for(iUnit = 0; iUnit < EQSI_NUMUNIT_INPUT; iUnit += 1) {
+                if( strncmp(_szEqtn.substring(iThisPt), pszSt, MAX(pszSt.length, iTokLen)) == 0 ) {
+                    //---hanging---
+                    if(uLookFor == LOOKFOR_NUMBER) {
+                        iThisOp = isOps.Peek(); while(iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
+                        switch(iThisOp) {
+                            case OP_DIV:                 // hanging / --> add "1"
+                                vosParsEqn.push({
+                                    uTyp: VOTYP_PREFIX, // scale factor
+                                    dVal: 1.00,
+                                    iPos: iThisPt
+                                });
+                                iBrktOff += OP_BRACKETOFFSET; // higher precedence
+                                break;
+                            case OP_MUL:                 // after "*" not needed
+                                isOps.pop();              // remove the multiplication
+                                isPos.pop();
+                            break;
+                            default:                     // everything else is an error
+                                iError = EQERR_PARSE_NUMBEREXPECTED;
+                                return 0;
+                        }
+                    } else {
+                        iThisOp = iBrktOff + OP_BRACKETOFFSET; // do everthing higher than me
+                        v-- this? --v
+                        _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
+                    }
+        
+                    //---prefix---
+                    if (iPrfx >= 0) {
+                        if (iError != EQERR_NONE) return 0;
+                        vosParsEqn.push({
+                            uTyp: VOTYP_PREFIX, // scale factor
+                            dVal: CEquationSIUnitPrefix[iPrfx],
+                            iPos: iThisPt
+                        });
+                        isOps.push(OP_MUL + iBrktOff);
+                        isPos.push(iThisPt);
+                    }
+        
+                    //---unit---
+                    iThisOp = isOps[iOps.length - 1]; while (iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
+                    // TODO: v-- is this line correct?
+                    iThisOp = OP_MUL + iBrktOff + (iThisOp == OP_DIV ? 1 : 0) * OP_BRACKETOFFSET;
+                    vosParsEqn.push({
+                        uTyp: VOTYP_UNIT,
+                        iUnit: iUnit,
+                        iPos: iThisPt       // store const's position
+                    });
+                    v-- this? --v
+                    _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
+                    iThisScan = pszSt.length + ((iPrfx >= 0) ? 1 : 0); // length of this scan
+                    iPrfx = -9999;                     // stop searching prefixes
+                    break;                             // stop looking
+                }
+                ipszSt += 1;           // advance to next part in string
+            }
+            if (iPrfx <= -9999) break;
+        
+            //---Scan for prefix-------------------------
+            for (iPrfx = 0; iPrfx < EQSI_NUMUNIT_PREFIX; iPrfx += 1)
+                if (CEquationSIUnitPrefixStr[iPrfx] == _szEqtn[iThisPt]) break;
+            if (iPrfx >= EQSI_NUMUNIT_PREFIX) break; // skip if not found
+            iThisPt++;                            // start back up one
+            iTokLen--;                            // string is one char longer
+        } while(1);
+        return iThisScan;
+    }    
     /*********************************************************
     * Parse equation
     * Return value is an error code
@@ -944,6 +1051,13 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var k;
         for (k = 0; k < szString.length; k++) if (szString[k] == cChar) return (k + 1);
         return (NULL);
+    }
+
+    //===strncmp===============================================
+    function strncmp(str1, str2, num) {
+        const s1 = str1.substring(0, num),
+            s2 = str2.substring(0, num);
+        return s1 === s2 ? 0 : s1 > s2 ? 1 : -1;
     }
 
     //===strlen================================================

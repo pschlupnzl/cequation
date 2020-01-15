@@ -1,5 +1,5 @@
 /*****************************************************************************
-*  CLCEqtn.cpp                                          CÆSIVM LaserCanvas
+*  CLCEqtn.cpp                                          Cï¿½SIVM LaserCanvas
 *  Equation class implementation for LaserCanvas Rev. 5
 *  Class declaration in LasrCanv.h.
 * $PSchlup 2004-2006 $     $Revision 6 $
@@ -45,7 +45,7 @@
 *
 * The source string is stored as-is, and there is as yet no functionality for
 * converting the RPN stack back into a string. It is therefore worth checking
-* that expressions are parsed correctly. The CÆSIVM CEquation Tester is a
+* that expressions are parsed correctly. The Cï¿½SIVM CEquation Tester is a
 * useful tool for verifying the CEquation parsing algorithm.
 *
 * Errors
