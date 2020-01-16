@@ -451,7 +451,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     var isPos;                                  // stack of operator positions (parse only)
     var isOps;                                  // stack of pending operations (parse only)
 
-
+    var m_szUnit = "";                         // char   formatted string before output
+    var m_uUnitTarget = {};                    // UNITBASE target unit base (array of doubles for each EQSI_NUMUNIT_BASE)
+    var m_dScleTarget = 0.00;                  // double   target scaling
+    var m_dOffsTarget = 0.00;                  // double   target offset
+ 
     /**********************************************************
     * Update
     **********************************************************/
@@ -519,14 +523,14 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     function ContainsUnits() {
         var iThisPt;                             // loop counter
     
-        if (iEqnLength <= 0) return(false);         // no equation defined
+        if (iEqnLength <= 0) return false;         // no equation defined
         for (iThisPt = 0; iThisPt < iEqnLength; iThisPt += 1) {
             if (pvoEquation[iThisPt].uTyp == VOTYP_UNIT) { // found a unit
                 iErrorLocation = pvoEquation[iThisPt].iPos; // point to position
-                return(true);
+                return true;
             }
         }
-        return(false);
+        return false;
     }
 
     /*********************************************************
@@ -540,7 +544,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     *    the multiplication has higher precedence.
     * Returns iThisScan
     *********************************************************/
-   function _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, vosParsEqn, uLookFor) {
+   function _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, uLookFor) {
         var iThisScan;                         // int   advance this scan location
         var pszSt;                             // char *offset into character arrays
         var iTokLen;                           // int   token length
@@ -560,7 +564,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         do {                                     // search twice: once with and then without prefix
             pszSt = CEquationSIUnitStr[ipszSt];      // start at beginning of string
             for(iUnit = 0; iUnit < EQSI_NUMUNIT_INPUT; iUnit += 1) {
-                if( strncmp(_szEqtn.substring(iThisPt), pszSt, MAX(pszSt.length, iTokLen)) == 0 ) {
+                if( strncmp(_szEqtn.substring(iThisPt), pszSt, Math.max(pszSt.length, iTokLen)) == 0 ) {
                     //---hanging---
                     if(uLookFor == LOOKFOR_NUMBER) {
                         iThisOp = isOps.Peek(); while(iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
@@ -710,6 +714,13 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                                     dVal: CEquationSIConst[iCnst],
                                     iPos: iThisPt  // store const's position
                                 });
+                                if (CEquationSIConstUnitIndx[iCnst] >= 0) {
+                                    pvoEquation.push({
+                                        uTyp: VOTYP_UNIT,
+                                        iUnit: CEquationSIConstUnitIndx[iCnst],
+                                        iPos: iThisPt // store unit multiplier
+                                    });
+                                }
                                 iThisScan = iTokLen;       // length of this scan
                                 uLookFor = LOOKFOR_BINARYOP; // look for binary operator next
                                 break;                       // stop looking
@@ -742,11 +753,10 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         }
                         if (iNArgOp < NUM_NARGOP) break; // break out if found n-arg op
 
-                        ///            //---hanging unit---
-                        ///            if(UnitsEnabled()) {
-                        ///               iThisScan = _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, isOps, isPos, vosParsEqn, uLookFor);
-                        ///               if(iThisScan > 0) { uLookFor = LOOKFOR_BINARYOP; break; }
-                        ///            }
+                        //---hanging unit---
+                        iThisScan = _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, isOps, isPos, uLookFor);
+                        if (iThisScan > 0) { uLookFor = LOOKFOR_BINARYOP; break; }
+
                         iError = EQERR_PARSE_UNKNOWNFUNCVAR;
 
                         //---Negative sign---
@@ -908,9 +918,32 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         uLookFor = LOOKFOR_NUMBER;     // look for number again
                         break;
                     } // auto-search binary op for loop
-                    if (iThisOp - iBrktOff > OP_BINARYMAX) iThisScan = 0; // catch non-binary operators
-                    break;
+                    
+                    // if (iThisOp - iBrktOff > OP_BINARYMAX) iThisScan = 0; // catch non-binary operators
+                    // break;
 
+                    //---Units----------------
+                    iThisScan = _ParseEquationUnits(_szEqtn, iThisPt, iBrktOff, uLookFor);
+                    if (iThisScan > 0) { uLookFor = LOOKFOR_BINARYOP; break; }
+
+                    //---Target unit----------
+                    if (_szEqtn[iThisPt] == '#') {
+                        iThisPt += 1;                   // skip past delimiter sign
+                        var o = {}
+                        iError = _StringToUnit(_szEqtn.substring(iThisPt), o);
+                        m_szUnit = o.pszUnitOut;
+                        m_uUnitTarget = o.pUnit;
+                        m_dScleTarget = o.pdScale; // TODO: Only if truthy?
+                        m_dOffsTarget = o.pdOffset; // TODO: Only if truthy?
+
+                        if(iError != EQERR_NONE) iThisPt += iErrorLocation; // shift error into string
+                        else iThisPt = strlen(_szEqtn); // this should be last on line
+                        iThisScan = 1;
+                    } else {
+                        iError = EQERR_PARSE_BINARYOPEXPECTED;
+                    }
+                 break;
+     
                 //----------------------------------------
                 //   Bracket -(-
                 //----------------------------------------
@@ -956,6 +989,153 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
 
     /*********************************************************
+    * _StringToUnit                                   Private
+    *********************************************************/
+    // int CEquation::_StringToUnit(const char *_szEqtnOffset, char *pszUnitOut, int iLen, UNITBASE *pUnit, double *pdScale, double *pdOffset) {
+    function _StringToUnit(_szEqtnOffset, o) { // keys of o were by-reference out variables in C++
+        var pUnit = null;
+        var pdScale = 1.00;
+        var pdOffset = 0.00;
+        var szUnitOut = "";                 // char     formatted local text
+        var dScale, dOffset;                // double   local values
+        var uUnit = { d: [] };              // UNITBASE local unit assembly
+        var uUnitCur = { d: [] };           // UNITBASE current unit
+        var dPwrCur;                        // double   current scaling power
+        var dSclCur;                        // double   current scale factor
+        var ipszEqtn;                       // char    *pointer into equation
+        var psz;                            // char    *loop pointer into unit
+        var dVal;                           // double   scanned value
+        var iUnit;                          // int      unit loop counter
+        var iBase;                          // int      base unit loop counter
+        var iSign;                          // int      sign, top or bottom
+        var iPrfx;                          // int      flag that unit is found
+        var iTokLen;                        // int      token length
+    
+        //===Preliminaries=====================================
+        for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) {
+            uUnitCur.d[iBase] = uUnit.d[iBase] = 0.00; // clear unit arrays
+        }
+        iError   = EQERR_NONE;                   // default, no error
+        iErrorLocation = 0;                      // just in case this becomes important
+        dScale   = 1.00;                         // no scaling
+        dOffset  = 0.00;                         // no offset
+        iSign    = +1;                           // start on numerator
+        dSclCur  = 1.00;                         // current scale factor
+        dPwrCur  = 1.00;                         // current scaling power
+        iUnit    = -1;                           // no unit to apply
+        ipszEqtn = 0;                            // start at beginning of string
+    
+        if (strlen(_szEqtnOffset) <= 0) { iError = EQERR_PARSE_UNITEXPECTED; iErrorLocation = 0; return iError; }
+        while (_szEqtnOffset[ipszEqtn] == ' ') ipszEqtn++;         // skip whitespace
+        if (_szEqtnOffset[ipszEqtn] == '1') pszEqtn++;             // skip "1" in "1/" or "1mm"
+    
+        //===Scan Each Unit====================================
+        do {
+            //---Apply current------------------------
+            if (iUnit >= 0) {
+                for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) {
+                    uUnit.d[iBase] += iSign * dPwrCur * uUnitCur.d[iBase]; // apply current unit
+                    uUnitCur.d[iBase] = CEquationSIUnit[iUnit][iBase]; // new base unit scaling
+                }
+                if (iSign > 0) dScale *= Math.pow(dSclCur, dPwrCur); else dScale /= Math.pow(dSclCur, dPwrCur);
+                dSclCur = dPwrCur = 1.00;
+            }
+        
+            //---Skip whitespace----------------------
+            while (_szEqtnOffset[ipszEqtn] == ' ') pszEqtn++;     // skip any whitespace
+            if (_szEqtnOffset[ipszEqtn] == '\0') break;           // exit when at end of string
+            if ((strlen(szUnitOut) > 0) && (szUnitOut[strlen(szUnitOut) - 1 ]!= '/'))
+                szUnitOut += " "; // add space between units on output
+        
+            //---Solidus------------------------------
+            if (_szEqtnOffset[ipszEqtn] == '/') {
+                if (iSign < 1) { iError = EQERR_PARSE_ILLEGALCHAR; break; } // don't allow double-solidus
+                szUnitOut += "/";                  // print solidus to output
+                iUnit = -1;                        // don't apply unit next time
+                iSign = -1; ipszEqtn++; continue;   // at first occurrence, switch to denominator
+            }
+        
+            //---Unit---------------------------------
+            iPrfx = -1;                           // haven't searched for prefix yet
+            //// iTokLen=0; while(pszEqtn[iTokLen] && strchr(EQ_VALIDUNIT, pszEqtn[iTokLen])) iTokLen++;
+            iTokLen=0; while(iTokLen < _szEqtnOffset.length - ipszEqtn && strchr(EQ_VALIDUNIT, _szEqtnOffset[ipszEqtn + iTokLen])) iTokLen++;
+        
+            do {
+                ////for(psz=(char*)CEquationSIUnitStr, iUnit=0; iUnit<EQSI_NUMUNIT_INPUT; iUnit++, psz+=strlen(psz)+1) {
+                for(iUnit=0; iUnit<EQSI_NUMUNIT_INPUT; iUnit++) {
+                    psz = CEquationSIUnitStr[iUnit];
+                    if (strncmp(_szEqtnOffset[ipszEqtn], psz, MAX(iTokLen, strlen(psz))) == 0) {
+                        //---Scale and Offset---
+                        if( ((CEquationSIUnit[iUnit][EQSI_NUMUNIT_BASE] != 1.00) && (dOffset != 0.00)) // don't allow offsets on pre-scaled
+                            || ((CEquationSIUnit[iUnit][EQSI_NUMUNIT_BASE+1] != 0.00) && (dScale != 1.00)) // don't combine scales and offsets
+                            || ((CEquationSIUnit[iUnit][EQSI_NUMUNIT_BASE+1] != 0.00) && (iSign < 0)) // don't allow offsets in denominator
+                            ) {
+                            iError = EQERR_PARSE_UNITINCOMPATIBLE; break;
+                        }
+                        for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) {
+                            uUnitCur.d[iBase] = CEquationSIUnit[iUnit][iBase]; // new base unit scaling
+                        }
+                        dSclCur *= CEquationSIUnit[iUnit][EQSI_NUMUNIT_BASE];
+                        dOffset += CEquationSIUnit[iUnit][EQSI_NUMUNIT_BASE+1];
+        
+                        //---Format---
+                        //// sprintf(szUnitOut+strlen(szUnitOut), "%s", psz); // print this unit to output
+                        szUnitOut += psz;            // print this unit to output
+                        ipszEqtn += strlen(psz);
+                        iPrfx = -999;                // indicate unit was found
+                        break;
+                    }//if(matched)
+                }//for(unit)
+                if ((iPrfx <= -999) || (iError!=EQERR_NONE)) break; // continue out of loop once unit found
+                if ((iPrfx >= 0) || (iTokLen <= 1)) { iError = EQERR_PARSE_UNITEXPECTED; break; }
+        
+                //---Prefix----------------------------
+                for (iPrfx = 0; iPrfx < EQSI_NUMUNIT_PREFIX; iPrfx++) {
+                    if (_szEqtnOffset[ipszEqtn] == CEquationSIUnitPrefixStr[iPrfx]) {
+                        dSclCur *= CEquationSIUnitPrefix[iPrfx];
+                        szUnitOut += CEquationSIUnitPrefixStr[iPrfx];
+                        ipszEqtn++; iTokLen--;
+                        break;
+                    }
+                }
+                if (iPrfx >= EQSI_NUMUNIT_PREFIX) { iError = EQERR_PARSE_UNITEXPECTED; break; }
+                while (_szEqtnOffset[ipszEqtn] == ' ') ipszEqtn++;  // skip whitespace
+            } while (iError == EQERR_NONE); // try again, with prefix second time
+        
+            //---Power--------------------------------
+            while (_szEqtnOffset[ipszEqtn] == ' ') ipszEqtn++;     // skip whitespace
+            ////if(sscanf(pszEqtn, "%lg", &dVal) > 0) {   // found a power
+            var 
+            dVal = scanFloat(_szEqtnOffset, ipszEqtn);
+            if(dVal) {   // found a power
+                if ((dVal < 0.00) && (iSign < 0)) { iError = EQERR_PARSE_UNITEXPECTED; break; } // don't allow kg/m-1
+                if (dOffset != 0.00) { iError = EQERR_PARSE_UNITINCOMPATIBLE; break; } // don't allow degF^2
+                dPwrCur = dVal;
+                szUnitOut += dPwrCur;
+                while ("-+0123456789".indexOf(_szEqtnOffset[ipszEqtn]) >= 0) ipszEqtn++; // skip number
+            }
+        } while(iError == EQERR_NONE);
+    
+        //---Check ending----------------------------
+        if (szUnitOut[strlen(szUnitOut)-1] == '/') iError = EQERR_PARSE_UNITEXPECTED;
+    
+        //===Finalize==========================================
+        if (iError != EQERR_NONE) iErrorLocation = pszEqtn - _szEqtnOffset; // distance into string
+        //// if (pszUnitOut) strncpy(pszUnitOut, szUnitOut, iLen);
+        //// if (pUnit) for(iBase=0; iBase<EQSI_NUMUNIT_BASE; iBase++) pUnit->d[iBase] = uUnit.d[iBase];
+        //// if (pdScale ) *pdScale  = dScale;
+        //// if (pdOffset) *pdOffset = dOffset;
+    
+        // C++ filled out variables by reference.
+        o.pszUnitOut = szUnitOut;
+        o.pUnit = pUnit;
+        o.pdScale = pdScale;
+        o.pdOffset = pdOffset;
+
+        return iError;
+    }
+ 
+ /*********************************************************
     * _ProcessOps                                     Private
     * There are several places during parsing where the equa-
     * tion needs to  be processed, e.g. to sequence  multiple
