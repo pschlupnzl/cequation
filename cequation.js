@@ -479,7 +479,8 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
         //---Set Answer-------------------------------
         ShowEquationStack();
-        DoEquation(ddVar);
+        var tfAllowDerived = true;
+        DoEquation(ddVar, tfAllowDerived);
     }
 
 
@@ -1267,14 +1268,17 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         return ([parseFloat(sz.substr(iOffs, iLen)), iLen - iOffs]);
     }
 
-
+    /** Returns the sign of the number [-1, 0, 1]. */
+    function SIGN (val) {
+        return val > 0 ? +1 : val < 0 ? -1 : 0;
+    }
 
     /*********************************************************
     *  DoEquation
     *  Perform calculation, using the variables given.
     * I'm stripping out all of the units processing here
     *********************************************************/
-    function DoEquation(dVar) {
+    function DoEquation(dVar, tfAllowDerived) {
         var dsVals = new Array();                // RPN stack of values
         var usUnits = new Array();               // RPN stack of unit factors
         var voThisValop;                         // token being processed
@@ -1290,6 +1294,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var szErrMsg;                            // error message string
 
         if (pvoEquation.length <= 0) return (iError = EQERR_EVAL_NOEQUATION);
+        uUnitZero = { d: [] };
 
         iError = EQERR_NONE;                     // no error
         for (iThisPt = 0; iThisPt < pvoEquation.length && iError == EQERR_NONE; iThisPt++) {
@@ -1301,19 +1306,33 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             switch (voThisValop.uTyp) {
                 //===Store a value==================================
                 case VOTYP_VAL:
-                    dsVals.push(voThisValop.dVal);
+                case VOTYP_PREFIX:
+                    dsVals.push(voThisValop.dVal); usUnits.push(uUnitZero);
                     break;
 
                 //===Variable=======================================
                 case VOTYP_REF:
                     if ((voThisValop.iRef >= 0) && (voThisValop.iRef < dVar.length)) {
                         dsVals.push(dVar[voThisValop.iRef]); // save variable value
+                        usUnits.push(uUnitZero);
                     } else {                           // need supplied variable values
                         dsVals.push(0.000);
+                        usUnits.push(uUnitZero);
                         iError = EQERR_EVAL_CONTAINSVAR;
                     }
                     break;
 
+                    //===Units==========================================
+                    case VOPTYP_UNIT:
+                        uUnit = usUnits.pop();             // get last unit
+                        for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++)
+                            uUnit.d[iBase] += CEquationSIUnit[voThisValop.iUnit][iBase];
+                        usUnits.push(uUnit);               // push multiplied unit
+                        dVal = dsVals.pop();
+                        dVal = CEquationSIUnit[voThisValop.iUnit][EQSI_NUMUNIT_BASE + 1] // offset
+                            + dVal * CEquationSIUnit[voThisValop.iUnit][EQSI_NUMUNIT_BASE]; // scale
+                        dsVals.push(dVal);
+                        break;
 
                 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 // Operators
@@ -1331,24 +1350,58 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                     }
 
                     //===Binary Operators============================
+                    // These now also include unit checking.
                     if (voThisValop.uOp < OP_UNARY) {
                         if (dsVals.length < 2) iError = EQERR_EVAL_STACKUNDERFLOW;
-                        dArg2 = dsVals.pop();           // get second and..
-                        dArg1 = dsVals.pop();           //..first arguments of op
+                        dArg2 = dsVals.pop(); uUnit2 = usUnits.pop() // get second and..
+                        dArg1 = dsVals.pop(); uUnit1 = usUnits.pop() //..first arguments of op
 
                         //---Check easy math errors---------
                         switch (voThisValop.uOp) {
                             case OP_DIV: if (dArg2 == 0) { dArg2 = 1.00; iError = EQERR_MATH_DIV_ZERO; } break;
                             case OP_POW:
-                                if (dArg1 < 0.00) dArg2 = floor(dArg2 + 0.50); // prevent fractions on negatives
-                                if ((dArg1 == 0.00) && (dArg2 < 0.00)) { dArg1 = 1.00; iError = EQERR_MATH_DIV_ZERO; }
+                                if (dArg1 < 0.00) dArg2 = Math.floor(dArg2 + 0.50); // prevent fractions on negatives
+                                if((dArg1 == 0.00) && (dArg2 < 0.00)) { dArg1 = 1.00; iError = EQERR_MATH_DIV_ZERO; }
+                                break;
+                        }
+                 
+                        //---Check Units--------------------
+                        switch(voThisValop.uOp) {
+                            case OP_ADD:  case OP_SUB:
+                            case OP_OR:   case OP_AND:
+                            case OP_LTE:  case OP_GTE:
+                            case OP_LT:   case OP_GT :
+                            case OP_NEQ:  case OP_EQ :
+                                for(iBase = 0; (iBase < EQSI_NUMUNIT_BASE) && (uUnit1.d[iBase] == uUnit2.d[iBase]); iBase++);
+                                if(iBase < EQSI_NUMUNIT_BASE) {
+                                    iError = EQERR_EVAL_UNITMISMATCH; // mismatch triggers error
+                                }
+                                else switch (voThisValop.uOp) {
+                                    case OP_ADD:  case OP_SUB:
+                                        uUnit = uUnit2;
+                                        break;
+                                    case OP_OR:   case OP_AND:
+                                    case OP_LTE:  case OP_GTE:
+                                    case OP_LT:   case OP_GT :
+                                    case OP_NEQ:  case OP_EQ :
+                                        uUnit = uUnitZero;
+                                        break;
+                                }
+                                break;
+                            case OP_MUL: for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) uUnit.d[iBase] = uUnit1.d[iBase] + uUnit2.d[iBase]; break;
+                            case OP_DIV: for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) uUnit.d[iBase] = uUnit1.d[iBase] - uUnit2.d[iBase]; break;
+            
+                            case OP_POW:
+                                for (iBase = 0; (iBase < EQSI_NUMUNIT_BASE) && (uUnit2.d[iBase] == 0.00); iBase++)
+                                    uUnit.d[iBase] = uUnit1.d[iBase] * dArg2; // argument factors up as power
+                                if(iBase < EQSI_NUMUNIT_BASE) iError = EQERR_EVAL_UNITNOTDIMLESS;
                                 break;
                         }
 
                         //---Perform Op---------------------
                         switch (voThisValop.uOp) {
-                            case OP_PSH: dsVals.push(dArg1); dVal = dArg2; break; // restore both to stack
-                            case OP_POP: dVal = dArg2; break; // ignore first argument
+                            case OP_PSH: dsVals.push(dArg1); usUnits.push(uUnit1); dVal = dArg2; uUnit = uUnit2; break; // restore both to stack
+                            case OP_POP: dVal = dArg2; uUnit = uUnit2; break; // ignore first argument
                             case OP_ADD: dVal = dArg1 + dArg2; break;
                             case OP_SUB: dVal = dArg1 - dArg2; break;
                             case OP_MUL: dVal = dArg1 * dArg2; break;
@@ -1368,7 +1421,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         //===Unary Operators=============================
                     } else if (voThisValop.uOp < OP_NARG) {
                         if (dsVals.length < 1) iError = EQERR_EVAL_STACKUNDERFLOW;
-                        dArg1 = dsVals.pop();           // single function argument
+                        dArg1 = dsVals.pop(); uUnit = usUnits.pop(); // single function argument
 
                         switch (voThisValop.uOp - OP_UNARY) {
                             //---Primitive Limits Checking----------------
@@ -1422,8 +1475,8 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         if (dsVals.length < Math.abs(CEquationNArgOpArgc[voThisValop.uOp - OP_NARG])) iError = EQERR_EVAL_STACKUNDERFLOW;
                         //---2-Argument---------------------
                         if (CEquationNArgOpArgc[voThisValop.uOp - OP_NARG] == 2) {
-                            dArg2 = dsVals.pop();
-                            dArg1 = dsVals.pop();
+                            dArg2 = dsVals.pop(); uUnit2 = usUnits.pop();
+                            dArg1 = dsVals.pop(); uUnit1 = usUnits.pop();
 
                             switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_MOD:            // see Matlab's definitions..
@@ -1433,6 +1486,9 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                                         else iError = EQERR_MATH_DIV_ZERO;
                                         break;
                                     }
+
+                                    for(iBase=0; (iBase<EQSI_NUMUNIT_BASE) && (uUnit1.d[iBase]==uUnit2.d[iBase]); iBase++); // units must match
+                                    if(iBase<EQSI_NUMUNIT_BASE) iError = EQERR_EVAL_UNITMISMATCH; else uUnit = uUnit2; // answer has same units
 
                                     dVal = dArg1 - dArg2 * Math.floor(dArg1 / dArg2);
                                     if ((voThisValop.uOp - OP_NARG) == OP_NARG_REM) {
@@ -1445,6 +1501,9 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
                                 case OP_NARG_ATAN2:
                                 case OP_NARG_ATAN2D:
+                                    for(iBase=0; (iBase<EQSI_NUMUNIT_BASE) && (uUnit1.d[iBase]==uUnit2.d[iBase]); iBase++); // units must match
+                                    if(iBase<EQSI_NUMUNIT_BASE) iError = EQERR_EVAL_UNITMISMATCH; else uUnit = uUnitZero; // answer is dimensionless
+                  
                                     dVal = (dArg2 == 0.00) ?
                                         ((dArg1 == 0.00) ? 0.00 : ((dArg1 > 0.00) ? M_PI / 2.00 : -M_PI / 2.00))
                                         : Math.atan2(dArg1, dArg2);
@@ -1461,10 +1520,13 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                             switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_MAX:
                                 case OP_NARG_MIN:
-                                    dVal = dsVals.pop();
+                                    dVal = dsVals.pop(); uUnit = usUnits.pop();
                                     for (iArg = 1; iArg < pvoEquation[iThisPt].iArgc; iArg++) {
-                                        dArg1 = dsVals.pop();
+                                        dArg1 = dsVals.pop(); uUnit1 = usUnits.pop();
 
+                                        for(iBase=0; (iBase<EQSI_NUMUNIT_BASE) && (uUnit1.d[iBase]==uUnit.d[iBase]); iBase++);
+                                        if(iBase<EQSI_NUMUNIT_BASE) iError = EQERR_EVAL_UNITMISMATCH; // units must match
+                   
                                         switch (voThisValop.uOp - OP_NARG) {
                                             case OP_NARG_MAX: if (dArg1 > dVal) dVal = dArg1; break;
                                             case OP_NARG_MIN: if (dArg1 < dVal) dVal = dArg1; break;
@@ -1478,16 +1540,19 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         } else {
                             switch (voThisValop.uOp - OP_NARG) {
                                 case OP_NARG_IF:
-                                    dArg2 = dsVals.pop(); // value-if-false
-                                    dArg1 = dsVals.pop(); // value-if-true
-                                    dVal = dsVals.pop(); // conditional test
+                                    dArg2 = dsVals.pop(); uUnit2 = usUnits.pop(); // value-if-false
+                                    dArg1 = dsVals.pop(); uUnit1 = usUnits.pop(); // value-if-true
+                                    dVal = dsVals.pop(); uUnit = usUnits.pop(); // conditional test
+                                    for(iBase=0; (iBase<EQSI_NUMUNIT_BASE) && (uUnit.d[iBase]==0.00); iBase++); // units must match
+                                    if(iBase<EQSI_NUMUNIT_BASE) iError = EQERR_EVAL_UNITNOTDIMLESS;
+                                    uUnit = (dVal==0.00) ? uUnit2 : uUnit1;
                                     dVal = (dVal == 0.00) ? dArg2 : dArg1;
                                     break;
                                 default: iError = EQERR_EVAL_UNKNOWNNARGOP;
                             }
                         }
                     }//if
-                    dsVals.push(dVal);             // store operation result on stack
+                    dsVals.push(dVal); usUnits.push(uUnit); // store operation result on stack
                     break;
 
                 //---Fall-through error-------------------
@@ -1511,13 +1576,150 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         }
 
         //===Final Answer======================================
-        dVal = dsVals.pop();                     // last value is answer
+        dVal = dsVals.pop(); uUnit = usUnits.pop(); // last value is answer
+    //---Unit Specified------
+    if(m_dScleTarget != 0.00) {              // dScle gets set to at least 1.0 on custom
+        //---dimensions check---
+        for (iBase = 0; iBase < EQSI_NUMUNIT_BASE && m_uUnitTarget.d[iBase] == uUnit.d[iBase]; iBase++);
+        if(iBase < EQSI_NUMUNIT_BASE) {       // dimensions check
+    //printf("\nResult:"); for(iBase=0; iBase<EQSI_NUMUNIT_BASE; iBase++) printf(" %lg ", uUnit.d[iBase]);
+    //printf("\nTarget:"); for(iBase=0; iBase<EQSI_NUMUNIT_BASE; iBase++) printf(" %lg ", m_uUnitTarget.d[iBase]);
+            iErrorLocation = strlen(pszSrcEquation);
+            return (iError = EQERR_EVAL_UNITMISMATCH);
+        }
+        //---apply---
+        dVal = (dVal - m_dOffsTarget) / m_dScleTarget;
+
+    //---Not spec'd-------
+    } else {
+        var out = {
+            pdVal: dVal,
+            puUnit: uUnit
+        };
+        _AnswerUnitString(out, tfAllowDerived);   // convert answer with units
+        dVal = out.pdVal;
+        uUnit = out.puUnit;
+    }
+
         txtAns.value = dVal;
 
         //---Return----------------------------------
         return (iError = EQERR_NONE);               // return OK flag
     }
 
+    /*********************************************************
+    * AnswerUnitString                                Private
+    * If pdVal is supplied, searches for prefixes that make
+    * the value better and replaces the value there.
+    * This APPENDS to the string already in m_szUnit to al-
+    * llow target unit processing
+    *********************************************************/
+    function _AnswerUnitString(out, tfAllowDerived) {
+        var ddUnit = new Array(EQSI_NUMUNIT_BASE); // double scaled powers for matched unit
+        var iUnit;                            // int    matching unit loop counter
+        var iMaxUnit;                         // int    end point for matching unit
+        var iBase;                            // int    base unit loop counter
+        var k;                                // int    loop counter
+        var iNum;                             // int    number of units used
+        var dVal;                             // double temporary value
+        var dPwr;                             // double total absolute power
+        var dScl;                             // double power scale factor
+        var iNumUnitMin;                      // int    number of units for best-formatted case
+        var indxUnitMin;                      // int    starting matched unit index for best formatting
+        var dPwrUnitMin;                      // double smallest powers raised
+        var dSclUnitMin;                      // double power factor for best formatted
+        var ipsz, psz;                        // char  *pointer into units string
+    
+        //---Preliminaries---------------------------
+        for(iNum = iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) {
+            ddUnit[iBase] = out.puUnit.d[iBase];  // copy from input
+            if(ddUnit[iBase] != 0.00) iNum++;     // count units used
+        }
+    
+        //===Prefix / Scaling==================================
+    /*   //---Scaling---------------------------------
+        if((pdVal) && (iNum>0)) {
+    ///TODO: Also, use the unit scale factor entries here!
+    
+        //---Prefix-------------------------------
+        // We want the one where the remaining prefactor is
+        // closest to but in excess  of 1. Since the prefix
+        // values are sorted  largest to smallest, we  stop
+        // at the first one where this condition is met.
+        dScl = ABS(*pdVal);                   // absolute value of
+        for(iUnit=0; iUnit<EQSI_NUMUNIT_PREFIX_OUTPUT; iUnit++) if(dScl >= CEquationSIUnitPrefixOutput[iUnit]) break;
+        if((iUnit < EQSI_NUMUNIT_PREFIX_OUTPUT) && (CEquationSIUnitPrefixOutput[iUnit] != 1.00)) {
+            *pdVal /= CEquationSIUnitPrefixOutput[iUnit];
+            sprintf(m_szUnit+strlen(m_szUnit), "%c", CEquationSIUnitPrefixOutputStr[iUnit]);
+        }
+        }//if(pdVal)
+    */
+    
+        //===Find Closest Unit Power===========================
+        iNumUnitMin = 9999;                      // any formatting is better
+        indxUnitMin =   -1;                      // no derived unit index
+        dPwrUnitMin =  999.999;                  // no powers raised yet
+        dSclUnitMin = -999.999;                  // no scaling factors
+        iMaxUnit = tfAllowDerived ? EQSI_NUMUNIT : EQSI_NUMUNIT_BASE; // allow / disallow derived
+    
+        for(iUnit = 0; iUnit < iMaxUnit; iUnit++) {
+            for(iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) {
+                //---Scale factor---
+                if (ddUnit[iBase] == 0.00 || CEquationSIUnit[iUnit][iBase] == 0.00) continue; // this base unit not used
+                dScl = ddUnit[iBase] / CEquationSIUnit[iUnit][iBase]; // scale power by this unit
+        
+                //---Number used---
+                dPwr = Math.abs(dScl);             // matched unit power
+                iNum = 1;                          // matched unit coun
+                for (k = 0; k < EQSI_NUMUNIT_BASE; k++) { // iNum=1: The matched unit counts as one
+                    if ( k== iBase) continue;       // don't double-count base units
+                    dVal = ddUnit[k] - (dScl*CEquationSIUnit[iUnit][k]); // check match
+                    if (dVal == 0.00) continue;     // if exactly matches, don't include this base unit
+                    iNum++;                         // otherwise we have to keep this base unit
+                    dPwr += Math.ceil(Math.abs(dVal));        // count powers used
+                    if(dVal - Math.floor(dVal) != 0.00) dPwr+=10; // penalize fractional powers
+                }
+                //---Keep if better---
+                if(((iNum < iNumUnitMin) || (dPwr < dPwrUnitMin))
+                    || ((iNum == iNumUnitMin) && (dScl > 0.00) && (dSclUnitMin < 0.00))) { // this condition takes Hz over 1/s
+                    iNumUnitMin = iNum;             // new minimum number of base units
+                    indxUnitMin = iUnit;            // use this derived unit
+                    dPwrUnitMin = dPwr;             // total absolute powers used
+                    dSclUnitMin = dScl;             // power scaling of this unit
+                }
+            }
+        }
+    
+        //===Scale Unit========================================
+        if (indxUnitMin >= 0) {
+            for(iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++) // offset matched unit powers
+                ddUnit[iBase] -= dSclUnitMin*CEquationSIUnit[indxUnitMin][iBase];
+        }
+    
+        //===Format Unit=======================================
+        for(k = 1; k >= -1; k -= 2) {                  // repeat for top and bottom lines
+            //---Solidus---
+            if (k == -1) m_szUnit += "/";
+        
+            //---Matched---
+            if ((indxUnitMin >= 0) && (SIGN(dSclUnitMin) == k)) {
+                // for(psz=(char*)CEquationSIUnitStr, iUnit=0; iUnit<indxUnitMin; psz+=strlen(psz)+1, iUnit++);
+                m_szUnit += CEquationSIUnitStr[indxUnitMin]; // append matched unit
+                if(Math.abs(dSclUnitMin) != 1.00) m_szUnit += k*dSclUnitMin;
+            }
+        
+            //---Base---
+            for (iBase=0; iBase<EQSI_NUMUNIT_BASE; iBase++) {
+                if (k * ddUnit[iBase] <= 0.00) continue; // this base unit not used
+                if ((strlen(m_szUnit) > 0) && (m_szUnit[strlen(m_szUnit) - 1] != '/')) m_szUnit += " ";
+                m_szUnit += CEquationSIUnitStr[iBase];
+                if (k * ddUnit[iBase] != 1.00) m_szUnit += k * ddUnit[iBase];
+            }
+        }
+        if (m_szUnit[strlen(m_szUnit) - 1] == '/') m_szUnit = m_szUnit.substr(0, m_szUnit.length - 1); // truncate unused trailing solidus
+    
+    }
+ 
     Update();
     [txtEqn].concat(txtVarNames, txtVarValues).forEach(function (el) { el.addEventListener("keyup", Update); });
     txtEqn.focus();
