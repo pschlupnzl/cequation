@@ -563,8 +563,8 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
     
         //---Scan for Unit---------------------------
         do {                                     // search twice: once with and then without prefix
-            pszSt = CEquationSIUnitStr[ipszSt];      // start at beginning of string
             for(iUnit = 0; iUnit < EQSI_NUMUNIT_INPUT; iUnit += 1) {
+                pszSt = CEquationSIUnitStr[ipszSt];      // start at beginning of string
                 if( strncmp(_szEqtn.substring(iThisPt), pszSt, Math.max(pszSt.length, iTokLen)) == 0 ) {
                     //---hanging---
                     if(uLookFor == LOOKFOR_NUMBER) {
@@ -604,7 +604,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                     }
         
                     //---unit---
-                    iThisOp = isOps[iOps.length - 1]; while (iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
+                    iThisOp = isOps[isOps.length - 1]; while (iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
                     // TODO: v-- is this line correct?
                     iThisOp = OP_MUL + iBrktOff + (iThisOp == OP_DIV ? 1 : 0) * OP_BRACKETOFFSET;
                     pvoEquation.push({
@@ -919,6 +919,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                         uLookFor = LOOKFOR_NUMBER;     // look for number again
                         break;
                     } // auto-search binary op for loop
+                    if (uLookFor !== LOOKFOR_BINARYOP) break;
                     
                     // if (iThisOp - iBrktOff > OP_BINARYMAX) iThisScan = 0; // catch non-binary operators
                     // break;
@@ -1323,7 +1324,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                     break;
 
                     //===Units==========================================
-                    case VOPTYP_UNIT:
+                    case VOTYP_UNIT:
                         uUnit = usUnits.pop();             // get last unit
                         for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++)
                             uUnit.d[iBase] += CEquationSIUnit[voThisValop.iUnit][iBase];
