@@ -503,6 +503,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                 case VOTYP_VAL: szRow += "Value=" + pvoEquation[iOp].dVal; break;
                 case VOTYP_OP: szRow += "Operator:" + OP2STR(pvoEquation[iOp].uOp); break;
                 case VOTYP_REF: szRow += "Variable[" + pvoEquation[iOp].iRef + "]"; break;
+                case VOTYP_UNIT: szRow += "Unit [" + pvoEquation[iOp].iUnit + "]"; break;
                 case VOTYP_NARGC: szRow += "nArgC=" + pvoEquation[iOp].iArgc; break;
                 default: szRow += "??Valop=" + pvoEquation[iOp].uTyp;
             }
@@ -1296,6 +1297,10 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
         if (pvoEquation.length <= 0) return (iError = EQERR_EVAL_NOEQUATION);
         uUnitZero = { d: [] };
+        for (iThisPt = 0; iThisPt < EQSI_NUMUNIT_BASE; iThisPt += 1) {
+            uUnitZero.d[iThisPt] = 0;
+        }
+        m_szUnit = "";
 
         iError = EQERR_NONE;                     // no error
         for (iThisPt = 0; iThisPt < pvoEquation.length && iError == EQERR_NONE; iThisPt++) {
@@ -1602,7 +1607,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         uUnit = out.puUnit;
     }
 
-        txtAns.value = dVal;
+        txtAns.value = dVal + m_szUnit;
 
         //---Return----------------------------------
         return (iError = EQERR_NONE);               // return OK flag
