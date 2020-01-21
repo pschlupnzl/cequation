@@ -252,7 +252,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         // Base units . . . . . . | Derived units . . .          | Constants . .
         "kg", "m", "A", "s", "K", "mol", "cd", "W", "J", "Pa", "N", "Hz", "C", "V", "F", "Ohm",
         "g", "L", "degC", "degF", "mi", "nmi", "yd", "ft", "in", "eV", // input only units
-        "m/s", "F/m", "N/A2", "m3/kg s2", "J s", "/mol", "J/K", "J/K mol", // constants
+        "m/s", "F/m", "N/A2", "m3/kg s2", "J s", "/mol", "J/K", "J/K mol" // constants
     ];
 
     //---Prefixes-----------------------------------
@@ -501,10 +501,11 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             switch (pvoEquation[iOp].uTyp) {
                 case VOTYP_UNDEFINED: szRow += "!Undefined Valop"; break;
                 case VOTYP_VAL: szRow += "Value=" + pvoEquation[iOp].dVal; break;
-                case VOTYP_OP: szRow += "Operator:" + OP2STR(pvoEquation[iOp].uOp); break;
+                case VOTYP_OP: szRow += "Operator=" + OP2STR(pvoEquation[iOp].uOp); break;
                 case VOTYP_REF: szRow += "Variable[" + pvoEquation[iOp].iRef + "]"; break;
-                case VOTYP_UNIT: szRow += "Unit [" + pvoEquation[iOp].iUnit + "]"; break;
+                case VOTYP_UNIT: szRow += "Unit[" + pvoEquation[iOp].iUnit + "]=" + CEquationSIUnitStr[pvoEquation[iOp].iUnit]; break;
                 case VOTYP_NARGC: szRow += "nArgC=" + pvoEquation[iOp].iArgc; break;
+                case VOTYP_PREFIX: szRow += "Prefix=" + pvoEquation[iOp].dVal; break;
                 default: szRow += "??Valop=" + pvoEquation[iOp].uTyp;
             }
             sz += szRow + "<BR>";
@@ -554,7 +555,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var iUnit;                             // int   loop counter
         var iThisOp;                           // int   unit multiplier
         // var voThisValop;                       // VALOP value/operator to push onto stack
-        var ipszSt = 0;                        // Loop over CEquationSIUnitStr
+        // var ipszSt = 0;                        // Loop over CEquationSIUnitStr
         iThisScan =  0;                          // found no unit yet
         iPrfx     = -1;                          // no prefix yet
     
@@ -565,7 +566,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         //---Scan for Unit---------------------------
         do {                                     // search twice: once with and then without prefix
             for(iUnit = 0; iUnit < EQSI_NUMUNIT_INPUT; iUnit += 1) {
-                pszSt = CEquationSIUnitStr[ipszSt];      // start at beginning of string
+                pszSt = CEquationSIUnitStr[iUnit];      // start at beginning of string
                 if( strncmp(_szEqtn.substring(iThisPt), pszSt, Math.max(pszSt.length, iTokLen)) == 0 ) {
                     //---hanging---
                     if(uLookFor == LOOKFOR_NUMBER) {
@@ -618,7 +619,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
                     iPrfx = -9999;                     // stop searching prefixes
                     break;                             // stop looking
                 }
-                ipszSt += 1;           // advance to next part in string
+                // ipszSt += 1;           // advance to next part in string
             }
             if (iPrfx <= -9999) break;
         
@@ -1108,7 +1109,6 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
             //---Power--------------------------------
             while (_szEqtnOffset[ipszEqtn] == ' ') ipszEqtn++;     // skip whitespace
             ////if(sscanf(pszEqtn, "%lg", &dVal) > 0) {   // found a power
-            var 
             dVal = scanFloat(_szEqtnOffset, ipszEqtn);
             if(dVal) {   // found a power
                 if ((dVal < 0.00) && (iSign < 0)) { iError = EQERR_PARSE_UNITEXPECTED; break; } // don't allow kg/m-1
@@ -1287,7 +1287,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
         var iThisPt;                             // pointer into equation
         var iArg;                                // multi-arg loop counter
         var uUnitZero;                           // zeros unit block for convenience
-        var uUnit;                               // result unit
+        var uUnit = { d: [] };                   // result unit
         var uUnit1;                              // argument 1 unit
         var uUnit2;                              // argument 2 unit
         var dVal;                                // result value
@@ -1330,7 +1330,7 @@ var CEquation = function (txtEqn, txtAns, divStack, txtVarNames, txtVarValues) {
 
                     //===Units==========================================
                     case VOTYP_UNIT:
-                        uUnit = usUnits.pop();             // get last unit
+                        uUnit = usUnits.pop() || { d: [] }; // get last unit, or blank if no preceding unit
                         for (iBase = 0; iBase < EQSI_NUMUNIT_BASE; iBase++)
                             uUnit.d[iBase] += CEquationSIUnit[voThisValop.iUnit][iBase];
                         usUnits.push(uUnit);               // push multiplied unit
