@@ -3,15 +3,28 @@
 <head>
     <title>CEquation</title>
     <link rel="stylesheet" href="style.css" />
-    <script src="cequation.js"></script>
+    <script src="v2/cequation.js"></script>
+    <script src="v2/constants.js"></script>
+    <script src="v2/utils.js"></script>
+    <script src="v2/lexer.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
-            var cequation = new CEquation(
-                document.getElementById("txtEqn"),
-                document.getElementById("txtAns"),
-                document.getElementById("divStack"),
-                [].slice.call(document.querySelectorAll(".txtVarName")),
-                [].slice.call(document.querySelectorAll(".txtVarVal")));
+            const txtVarNames = [].slice.call(document.querySelectorAll(".txtVarName"));
+            const txtVarVals =  [].slice.call(document.querySelectorAll(".txtVarVal"));
+            const txtEqn = document.getElementById("txtEqn");
+            const txtAns = document.getElementById("txtAns");
+            const divStack = document.getElementById("divStack");
+
+            const update = function () {
+                const eqn = txtEqn.value;
+                const tokens = CEquation.lexer(eqn);
+                divStack.innerText = tokens 
+                    ? CEquation.utils.toString(tokens)
+                    : "(error)"
+            }
+
+            txtEqn.addEventListener("keyup", update);
+            update();
         })
     </script>
 </head>
@@ -19,15 +32,23 @@
     <table class="inputEquation">
         <tr>
             <td>Equation: </td>
-            <td><input type="text" id="txtEqn" class="monospace" value="x + sin(y * pi)" /></td>
+            <td><input 
+                type="text"
+                id="txtEqn"
+                class="monospace"
+                value="  1 +  2*3  "
+                x-value="1 m"
+                x-value="1 kg/s"
+                x-value="x + sin(y * pi) + max(0, 1)"
+                /></td>
         </tr>
-        <tr>
+        <!-- <tr>
             <td>Ans = </td>
             <td><input type="text" id="txtAns" class="monospace"/></td>
-        </tr>
+        </tr> -->
     </table>
 
-    <table class="variables">
+    <!-- <table class="variables">
         <thead>
             <tr><th>Variable</th><th></th><th>Value</th></tr>
         </thead>
@@ -36,7 +57,7 @@
             <tr><td><input type="text" class="txtVarName" value="y" /></td><td> = </td><td><input type="text" class="txtVarVal" value="0.25" /></td></tr>
             <tr><td><input type="text" class="txtVarName" value="z" /></td><td> = </td><td><input type="text" class="txtVarVal" value="1" /></td></tr>
         </tbody>
-    </table>
-    <div id="divStack"></div>
+    </table> -->
+    <pre id="divStack"></pre>
 </body>
 </html>
