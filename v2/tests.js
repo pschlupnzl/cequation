@@ -6,7 +6,7 @@
 
     const testCases = [
         {
-            eq: "1 + 2",
+            eq: "1 + 2", ans: { value: 3 },
             tokens: [
                 { typ: VOTYP.VAL, value: 1, pos: 0 },
                 { typ: VOTYP.VAL, value: 2, pos: 4 },
@@ -14,7 +14,7 @@
             ]
         },
         {
-            eq: "    1 + 2*3.5e2",
+            eq: "    1 + 2*3.5e2", ans: { value: 701 },
             tokens: [
                 { typ: VOTYP.VAL, value: 1, pos: 4 },
                 { typ: VOTYP.VAL, value: 2, pos: 8 },
@@ -44,7 +44,9 @@
     const runTest = function (test) {
         let pass = true;
         const tokens = CEquation.parse(test.eq);
-        pass = assert(tokens.length == test.tokens.length, "Mismatch tokens length") && pass;
+        const ans = CEquation.eval(tokens);
+        pass = assertEqual(test.tokens.length, tokens.length, "Mismatch tokens length") && pass;
+        pass = assertEqual(test.ans.value, ans.value, "Mismatch answer") && pass;
         tokens.forEach(function (token, index) {
             const testToken = test.tokens[index];
             pass = assertEqual(token.typ, testToken.typ, "Mismatch type token " + index) && pass;

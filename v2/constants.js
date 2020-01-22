@@ -142,7 +142,21 @@
         // UNITALREADYDEF: "UNITALREADYDEF",       // target unit already defined
         // UNITINCOMPATIBLE: "UNITINCOMPATIBLE",   // incompatible unit
         // ILLEGALCHAR: "ILLEGALCHAR",             // illegal character
-    
-    }
+    };
+
+    CEquation.EVAL_ERROR = {
+        // UNKNOWNBINARYOP: "UNKNOWNBINARYOP",    // Unknown binary operator
+        // UNKNOWNUNARYOP: "UNKNOWNUNARYOP",    // Unknown unary operator
+        // UNKNOWNNARGOP: "UNKNOWNNARGOP",    // Unkown n-arg operator
+        UNKNOWN_TOKEN_TYPE: "UNKNOWN_TOKEN_TYPE",    // Unknown Valop type
+        STACK_NOT_EMPTY: "STACK_NOT_EMPTY",    // Stack not empty at end of equation
+        STACK_UNDERFLOW: "STACK_UNDERFLOW",    // Stack hasn't enough entries
+        // CONTAINSVAR: "CONTAINSVAR",    // contains variables than are not supplied
+        // BADTOKEN: "BADTOKEN",    // not right type of token
+        // ASSIGNNOTALLOWED: "ASSIGNNOTALLOWED",    // not allowed to change variables
+        // UNITMISMATCH: "UNITMISMATCH",    // mismatched units
+        // UNITNOTDIMLESS: "UNITNOTDIMLESS",    // unit on expected dimensionless arg
+        // NOEQUATION: "NOEQUATION",    // there is no equation to evaluate
+    };
 }(CEquation));
 

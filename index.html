@@ -7,6 +7,7 @@
     <script src="v2/constants.js"></script>
     <script src="v2/utils.js"></script>
     <script src="v2/parse.js"></script>
+    <script src="v2/eval.js"></script>
     <script src="v2/tests.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
@@ -22,6 +23,8 @@
                 divStack.innerText = tokens 
                     ? CEquation.utils.toString(tokens)
                     : "(error)"
+                const ans = CEquation.eval(tokens);
+                txtAns.value = ans && ans.value;
             }
 
             txtEqn.addEventListener("keyup", update);
@@ -48,10 +51,10 @@
                 x-value="x + sin(y * pi) + max(0, 1)"
                 /></td>
         </tr>
-        <!-- <tr>
+        <tr>
             <td>Ans = </td>
             <td><input type="text" id="txtAns" class="monospace"/></td>
-        </tr> -->
+        </tr>
     </table>
 
     <!-- <table class="variables">

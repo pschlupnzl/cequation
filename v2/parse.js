@@ -54,6 +54,7 @@
                             op: OP.MUL + bracketOffset,
                             pos: pos
                         });
+                        parseLength = 1;
 
                     } else if (ch === "+") {
                         //---Positive sign---

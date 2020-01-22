@@ -53,6 +53,15 @@
     const parseError = function (equation, pos, message, tokens) {
         console.log(equation);
         console.log((new Array(pos + 1)).join("-") + "^ " + message);
+        return tokens;
+    };
+    
+    /**
+     * Default error handling if none supplied to the evaluator.
+     * @param {string} message Error message.
+     */
+    const evalError = function (message) {
+        console.log("Evaluation error: " + message);
     };
 
     /**
@@ -85,6 +94,7 @@
         assertEqual: assertEqual,
         toString: toString,
         parseError: parseError,
+        evalError: evalError,
         scanNumber: scanNumber,
         skipWhitespace: skipWhitespace,
     };
