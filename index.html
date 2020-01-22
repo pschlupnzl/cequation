@@ -7,6 +7,7 @@
     <script src="v2/constants.js"></script>
     <script src="v2/utils.js"></script>
     <script src="v2/lexer.js"></script>
+    <script src="v2/tests.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
             const txtVarNames = [].slice.call(document.querySelectorAll(".txtVarName"));
@@ -25,6 +26,11 @@
 
             txtEqn.addEventListener("keyup", update);
             update();
+
+            CEquation.runTests();
+            document.getElementById("butTests").addEventListener("click", function () {
+                CEquation.runTests();
+            });
         })
     </script>
 </head>
@@ -59,5 +65,8 @@
         </tbody>
     </table> -->
     <pre id="divStack"></pre>
+    <div>
+        <button id="butTests">Tests</button>
+    </div>
 </body>
 </html>
