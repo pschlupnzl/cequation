@@ -43,7 +43,7 @@
 
     const runTest = function (test) {
         let pass = true;
-        const tokens = CEquation.lexer(test.eq);
+        const tokens = CEquation.parse(test.eq);
         pass = assert(tokens.length == test.tokens.length, "Mismatch tokens length") && pass;
         tokens.forEach(function (token, index) {
             const testToken = test.tokens[index];

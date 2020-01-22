@@ -1,5 +1,5 @@
 (function (CEquation) {
-    const lexer = function (equation, parseError) {
+    const parse = function (equation, parseError) {
         const OP = CEquation.OP;
         const LOOKFOR = CEquation.LOOKFOR;
         const VOTYP = CEquation.VOTYP;
@@ -227,5 +227,5 @@ const processOps = function (tokens, opss, thisOp, bracketOffset) {
     } while(true);
 };
 
-    CEquation.lexer = lexer;
+    CEquation.parse = parse;
 }(CEquation));

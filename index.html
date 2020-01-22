@@ -6,7 +6,7 @@
     <script src="v2/cequation.js"></script>
     <script src="v2/constants.js"></script>
     <script src="v2/utils.js"></script>
-    <script src="v2/lexer.js"></script>
+    <script src="v2/parse.js"></script>
     <script src="v2/tests.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
@@ -18,7 +18,7 @@
 
             const update = function () {
                 const eqn = txtEqn.value;
-                const tokens = CEquation.lexer(eqn);
+                const tokens = CEquation.parse(eqn);
                 divStack.innerText = tokens 
                     ? CEquation.utils.toString(tokens)
                     : "(error)"
