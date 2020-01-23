@@ -28,8 +28,8 @@
         // Perform calculation.
         let vals;
         switch (token.op) {
-            case OP.PSH: valss.push(arg1); vals = arg2; break; // restore both to stack
-            case OP.POP: vals = arg2; break; // ignore first argument
+            // case OP.PSH: valss.push(arg1); vals = arg2; break; // restore both to stack
+            // case OP.POP: vals = arg2; break; // ignore first argument
             case OP.ADD: vals = { value: arg1.value + arg2.value }; break;
             case OP.SUB: vals = { value: arg1.value - arg2.value }; break;
             case OP.MUL: vals = { value: arg1.value * arg2.value }; break;

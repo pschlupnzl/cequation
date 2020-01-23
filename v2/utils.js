@@ -85,7 +85,7 @@
      * @returns {string} Number string.
      */
     const scanNumber = function (equation, pos) {
-        const match = /^[0-9]?(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?/.exec(equation.substr(pos));
+        const match = /^[0-9]*(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?/.exec(equation.substr(pos));
         return match && match[0];
     };
 
