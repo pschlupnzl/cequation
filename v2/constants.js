@@ -1,4 +1,7 @@
 (function (CEquation) {
+    CEquation.M_PI_180 = Math.PI / 180.0;
+    CEquation.M_180_PI = 180.0 / Math.PI;
+
     /**
      * Operator constants. These are also precedence values.
      */
@@ -71,22 +74,55 @@
         BRACKETOFFSET: 100, // added for each nested bracket
     };
 
+    CEquation.BinaryOpRe =
+        /^(\+|-|\*|\/|\^|\|\||&&|<=|>=|==|<|>|=|!=)/;
+ 
+    CEquation.UnaryOpRe =
+        /^(round|asind|acosd|atand|log10|floor|asin|atan|cosh|sinh|tanh|sind|cosd|tand|sqrt|sign|ceil|abs|exp|log|cos|sin|tan|acos|!)/;
+
     /**
-     * Two-character binary operator match.
+     * Operator match.
      */
-    CEquation.opch2 = {
+    CEquation.opch = {
+        "atan2d": CEquation.OP.NARG_ATAN2D,
+        "floor": CEquation.OP.FLOOR,
+        "log10": CEquation.OP.LOG10,
+        "asind": CEquation.OP.ASIND,
+        "acosd": CEquation.OP.ACOSD,
+        "atand": CEquation.OP.ATAND,
+        "round": CEquation.OP.ROUND,
+        "atan2": CEquation.OP.NARG_ATAN2,
+        "sqrt": CEquation.OP.SQRT,
+        "ceil": CEquation.OP.CEIL,
+        "acos": CEquation.OP.ACOS,
+        "asin": CEquation.OP.ASIN,
+        "atan": CEquation.OP.ATAN,
+        "cosh": CEquation.OP.COSH,
+        "sinh": CEquation.OP.SINH,
+        "tanh": CEquation.OP.TANH,
+        "sind": CEquation.OP.SIND,
+        "cosd": CEquation.OP.COSD,
+        "tand": CEquation.OP.TAND,
+        "sign": CEquation.OP.SIGN,
+        "abs": CEquation.OP.ABS,
+        "exp": CEquation.OP.EXP,
+        "log": CEquation.OP.LOG,
+        "cos": CEquation.OP.COS,
+        "sin": CEquation.OP.SIN,
+        "tan": CEquation.OP.TAN,
+        "not": CEquation.OP.NOT,
+        "max": CEquation.OP.NARG_MAX,
+        "min": CEquation.OP.NARG_MIN,
+        "mod": CEquation.OP.NARG_MOD,
+        "rem": CEquation.OP.NARG_REM,
         "||": CEquation.OP.OR,
         "!=": CEquation.OP.NEQ,
         "==": CEquation.OP.EQ,
         "&&": CEquation.OP.AND,
         "<=": CEquation.OP.LTE,
         ">=": CEquation.OP.GTE,
-    };
-
-    /**
-     * Single-character binary operator match.
-     */
-    CEquation.opch = {
+        "if": CEquation.OP.NARG_IF,
+        "!": CEquation.OP.NOT,
         "," : CEquation.OP.PSH,
         "+" : CEquation.OP.ADD,
         "-" : CEquation.OP.SUB,
@@ -145,12 +181,12 @@
     };
 
     CEquation.EVAL_ERROR = {
-        // UNKNOWNBINARYOP: "UNKNOWNBINARYOP",    // Unknown binary operator
-        // UNKNOWNUNARYOP: "UNKNOWNUNARYOP",    // Unknown unary operator
+        UNKNOWN_BINARY_OP: "UNKNOWN_BINARY_OP",   // Unknown binary operator
+        UNKNOWN_UNARY_OP: "UNKNOWN_UNARY_OP",     // Unknown unary operator
         // UNKNOWNNARGOP: "UNKNOWNNARGOP",    // Unkown n-arg operator
-        UNKNOWN_TOKEN_TYPE: "UNKNOWN_TOKEN_TYPE",    // Unknown Valop type
-        STACK_NOT_EMPTY: "STACK_NOT_EMPTY",    // Stack not empty at end of equation
-        STACK_UNDERFLOW: "STACK_UNDERFLOW",    // Stack hasn't enough entries
+        UNKNOWN_TOKEN_TYPE: "UNKNOWN_TOKEN_TYPE", // Unknown Valop type
+        STACK_NOT_EMPTY: "STACK_NOT_EMPTY",       // Stack not empty at end of equation
+        STACK_UNDERFLOW: "STACK_UNDERFLOW",       // Stack hasn't enough entries
         // CONTAINSVAR: "CONTAINSVAR",    // contains variables than are not supplied
         // BADTOKEN: "BADTOKEN",    // not right type of token
         // ASSIGNNOTALLOWED: "ASSIGNNOTALLOWED",    // not allowed to change variables

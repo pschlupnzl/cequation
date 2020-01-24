@@ -24,6 +24,7 @@
             
             parseLength = 0;
             const ch = equation[pos];
+            let match;
 
             // console.log("Look for " + lookFor + " at -->" + equation.substr(pos));
             switch (lookFor) {
@@ -32,6 +33,25 @@
                 //   Number, variable, function, unary.
                 //----------------------------------------
                 case LOOKFOR.NUMBER:
+                    match = CEquation.UnaryOpRe.exec(equation.substr(pos));
+                    if (match) {
+                        const fn = match[1];
+                        op = CEquation.opch[fn];
+                        opss.push({
+                            op: op + OP.UNARY + bracketOffset,
+                            pos: pos
+                        });
+                        parseLength = fn.length;
+                        lookFor = LOOKFOR.BRACKET;
+                        break;
+                    }
+                    // op = CEquation.opch6[equation.substr(pos, 6)]
+                    //     || CEquation.opch5[equation.substr(pos, 5)]
+                    //     || CEquation.opch4[equation.substr(pos, 4)]
+                    //     || CEquation.opch3[equation.substr(pos, 3)];
+                    // if (op) {
+                    //     console.log(op);
+                    // }
                     if (false) {
                         // valid char for 
                         // variables, 
@@ -40,6 +60,7 @@
                         // n-arg,
                         // unit,
                         // function
+                        //---unary---
                     } else if (ch === "-") {
                         //---Negative sign---
                         // For sho':  -2^2 = -4 according to Matlab, so - sign must be
@@ -92,11 +113,10 @@
                 // and  it doesn't combine the two arguments into a
                 // single value (in the evaluation routine, below.)
                 case LOOKFOR.BINARYOP:
-                    const ch2 = equation.substr(pos, 2);
-
-                    let op = CEquation.opch2[ch2] || CEquation.opch[ch] || null;
-                    if (op) {
-                        op += bracketOffset;
+                    match = CEquation.BinaryOpRe.exec(equation.substr(pos));
+                    if (match) {
+                        const fn = match[1];
+                        const op = CEquation.opch[fn] + bracketOffset;
                         const err = processOps(tokens, opss, op, bracketOffset);
                         if (err) {
                             return parseError(equation, pos, err, tokens);
@@ -105,11 +125,37 @@
                             op: op,
                             pos: pos
                         });
-                        parseLength = CEquation.opch2[ch2] ? 2 : 1;
+                        parseLength = fn.length;
                         lookFor = LOOKFOR.NUMBER;
+
+                    } else if (ch === ")") {
+                        //---Closing bracket---
+                        // In order  to allow multi-argument  operators, we
+                        // need to record the number of  arguments at parse
+                        // time---the RPN stack has no knowledge of bracket
+                        // levels when the equation is evaluated.
+
+                        // TODO: n-arg
+                        bracketOffset -= OP.BRACKETOFFSET;
+                        parseLength = 1;
                     }
+
+
                     if (parseLength <= 0) {
                         return parseError(equation, pos, PARSE_ERROR.BINARY_OP_EXPECTED, tokens);
+                    }
+                    break;
+
+                //----------------------------------------
+                //   Bracket -(-
+                //----------------------------------------
+                case LOOKFOR.BRACKET:
+                    if (ch === "(") {
+                        bracketOffset += OP.BRACKETOFFSET;
+                        parseLength = 1;
+                        lookFor = LOOKFOR.NUMBER;
+                    } else {
+                        return parseError(equation, pos, PARSE_ERROR.BRACKET_EXPECTED, tokens);
                     }
                     break;
 

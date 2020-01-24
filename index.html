@@ -27,13 +27,13 @@
                 txtAns.value = ans && ans.value;
             }
 
-            txtEqn.addEventListener("keyup", update);
-            update();
-
             CEquation.runTests();
             document.getElementById("butTests").addEventListener("click", function () {
                 CEquation.runTests();
             });
+
+            txtEqn.addEventListener("keyup", update);
+            update();
         })
     </script>
 </head>
@@ -45,10 +45,11 @@
                 type="text"
                 id="txtEqn"
                 class="monospace"
-                value="  1 +  2*3  "
+                x-value="  1 +  2*3  "
                 x-value="1 m"
                 x-value="1 kg/s"
                 x-value="x + sin(y * pi) + max(0, 1)"
+                value="(1 + 2) * 3 - sin(.5) / sqrt(2)"
                 /></td>
         </tr>
         <tr>
