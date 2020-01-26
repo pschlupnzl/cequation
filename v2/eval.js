@@ -104,6 +104,9 @@
      */
     const eval = function (tokens, evalError) {
         evalError = evalError || CEquation.utils.evalError;
+        if (!tokens) {
+            return evalError(CEquation.EVAL_ERROR.BAD_TOKEN);
+        }
         const VOTYP = CEquation.VOTYP;
         const OP = CEquation.OP;
         const valss = [];

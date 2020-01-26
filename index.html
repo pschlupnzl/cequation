@@ -19,12 +19,18 @@
 
             const update = function () {
                 const eqn = txtEqn.value;
-                const tokens = CEquation.parse(eqn);
-                divStack.innerText = tokens 
-                    ? CEquation.utils.toString(tokens)
-                    : "(error)"
-                const ans = CEquation.eval(tokens);
-                txtAns.value = ans && ans.value;
+                let err = null;
+                let errPos = 0;
+                const tokens = CEquation.parse(eqn, function (eq, pos, msg, tok) {
+                    errPos = pos;
+                    err = msg;
+                });
+                divStack.innerText = tokens && CEquation.utils.toString(tokens) || "";
+                const ans = tokens && CEquation.eval(tokens, function (msg) {
+                    err = msg
+                });
+                txtAns.value = err ? new Array(errPos).join(" ") + " ^ " + err
+                    : ans && ans.value || "";
             }
 
             CEquation.runTests();

@@ -14,13 +14,18 @@ body, input[type="text"] {
 }
 
 #txtEqn, #txtAns {
-	width: calc(100% - 1em);
-	padding: 0.2em 0.5em;
+	width: calc(100% - 2.5em);
+	padding: 0.5em 1em;
+	font-size: 2em;
 }
 
 #txtAns,
 .txtVarName {
 	border: none;
+}
+
+.monospace {
+	font-family: monospace;
 }
 
 /* #divStack {

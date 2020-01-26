@@ -188,7 +188,7 @@
         STACK_NOT_EMPTY: "STACK_NOT_EMPTY",       // Stack not empty at end of equation
         STACK_UNDERFLOW: "STACK_UNDERFLOW",       // Stack hasn't enough entries
         // CONTAINSVAR: "CONTAINSVAR",    // contains variables than are not supplied
-        // BADTOKEN: "BADTOKEN",    // not right type of token
+        BAD_TOKEN: "BAD_TOKEN",                   // not right type of token
         // ASSIGNNOTALLOWED: "ASSIGNNOTALLOWED",    // not allowed to change variables
         // UNITMISMATCH: "UNITMISMATCH",    // mismatched units
         // UNITNOTDIMLESS: "UNITNOTDIMLESS",    // unit on expected dimensionless arg
