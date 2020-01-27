@@ -141,26 +141,89 @@
     };
 
     /**
+     * Units.
+     */
+
+    CEquation.SIUnit;
+
+    CEquation.SIUnits = {
+        "dimensionless": [0, 0, 0, 0, 0, 0, 0, 1.0, 0],
+        //          kg      m      A      s      K     mol    cd    scale offset
+        //---SI Base Units---------------------------
+        "kg":   [  1.0,     0,     0,     0,     0,     0,     0,    1.0,     0], //  0 EQSI_KG  = mass
+        "m":    [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0], //  1 EQSI_M   = length
+        "a":    [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0], //  2 EQSI_A   = electric current
+        "s":    [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0], //  3 EQSI_S   = time
+        "k":    [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0], //  4 EQSI_K   = therm. temperature
+        "mol":  [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0], //  5 EQSI_MOL = amount of substance
+        "cd":   [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0], //  6 EQSI_CD  = lum. intensity
+    };
+
+    CEquation.SIDerivedUnits = {
+        //---SI Derived Units------------------------
+        "W":    [  1.0,   2.0,     0,  -3.0,     0,     0,     0,    1.0,     0], //  7 W  = J/s
+        "J":    [  1.0,   2.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  8 J  = N m
+        "Pa":   [  1.0,  -1.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  9 Pa = N/m2
+        "N":    [  1.0,   1.0,     0,  -2.0,     0,     0,     0,    1.0,     0], // 10 N  = kg m /s2
+        "Hz":   [    0,     0,     0,  -1.0,     0,     0,     0,    1.0,     0], // 11 Hz = 1/s
+        "C":    [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0], // 12 C  = A s
+        "V":    [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0], // 13 V  = W/A
+        "F":    [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], // 14 F  = C/V
+        "Ohm":  [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0], // 15 Ohm= V/A
+    };
+
+    CEquation.SIInputUnits = {
+        //---Allowed INPUT units only----------------
+        "g":    [  1.0,     0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 16 g -> kg
+        "L":    [    0,   3.0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 17 L -> m3
+        "degC": [    0,     0,     0,     0,   1.0,     0,     0,    1.0,273.15], // 18 degC -> K
+        "degF": [    0,     0,     0, 0, 1.0, 0, 0, 5.0/9.0,273.15-5.0/9.0*32.0], // 19 degF -> K
+        "mi":   [    0,   1.0,     0,     0,     0,     0,     0, 1609.344,   0], // 20 mi -> m
+        "nmi":  [    0,   1.0,     0,     0,     0,     0,     0, 1852.0,     0], // 21 nmi -> m
+        "yd":   [    0,   1.0,     0,     0,     0,     0,     0,    0.9144,  0], // 22 yd -> m
+        "ft":   [    0,   1.0,     0,     0,     0,     0,     0,    0.3048,  0], // 23 ft -> m
+        "in":   [    0,   1.0,     0,     0,     0,     0,     0,    2.54e-2, 0], // 24 in -> m
+        "eV":   [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0], // 25 eV -> J
+    };
+     
+        //---Dimensioned Constants-------------------
+    CEquation.SIConstUnits = {
+        "e0":   [ -1.0,  -3.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], //  1 e0  = F/m
+        "c":    [    0,   1.0,     0,  -1.0,     0,     0,     0,    1.0,     0], //  0 c   = m/s
+        "mu0":  [  1.0,   1.0,  -2.0,  -2.0,     0,     0,     0,    1.0,     0], //  2 mu0 = N/A2
+        "G":    [ -1.0,   3.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  3 G   = m3/ kg s2
+        "h":    [  1.0,   2.0,     0,  -1.0,     0,     0,     0,    1.0,     0], //  4 h   = J s
+        "N_A":  [    0,     0,     0,     0,     0,  -1.0,     0,    1.0,     0], //  5 N_A = 1/mol
+        "kB":   [  1.0,   2.0,     0,  -2.0,  -1.0,     0,     0,    1.0,     0], //  6 kB  = J/K
+        "R":    [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0], //  7 R   = J/K mol
+
+        //TODO: Check these!
+        "e0": null,
+        "e": null,
+        "R": null,
+     };
+     
+    /**
      * Constants.
      */
     CEquation.SIConst = {
-        "pi": { value: M_PI, description: "Ratio of circumference of circle to its diameter." },
-        "c": { value: 299792458, description: "Speed of light in vacuum." },
-        "Z0": { value: 376.730313461 },
-        "e0": { value: 8.854187817e-12, description: "Permittivity of a vacuum." },
-        "mu0": { value: 4e-7 * M_PI, description: "Permeability of a vacuum." },
-        "G": { value: 6.67428e-11, description: "Gravitational constant." },
-        "h": { value: 6.62606896e-34, description: "Planck's constant." },
-        "hbar": { value: 6.62606896e-34 / (2.00 * M_PI), description: "Reduced Planck's constant." },
-        "e": { value: 1.602176487e-19, description: "Electrical charge of an electron." },
-        "m_alpha": { value: 6.64465620e-27, description: "Mass of alpha particle." },
-        "m_e": { value: 9.10938215e-31, description: "Mass of electron." },
-        "m_n": { value: 1.674927211e-27, description: "Mass of neutron." },
-        "m_p": { value: 1.672621637e-27, description: "Mass of proton." },
-        "m_u": { value: 1.660538782e-27, description: "Atomic mass constant." },
-        "N_A": { value: 6.02214179e23, description: "Avogadro's constant." },
-        "kB": { value: 1.3806504e-23, description: "Boltzmann's constant." },
-        "R": { value: 8.314472, description: "Molar mass constant." },
+        "pi": { value: M_PI, unit: CEquation.SIUnits.dimensionless, description: "Ratio of circumference of circle to its diameter." },
+        "c": { value: 299792458, unit: CEquation.SIConstUnits.c, description: "Speed of light in vacuum." },
+        "Z0": { value: 376.730313461, unit: CEquation.SIUnits.ohm, description: "Impedance of free space."},
+        "e0": { value: 8.854187817e-12, unit: CEquation.SIConstUnits.e0, description: "Permittivity of a vacuum." },
+        "mu0": { value: 4e-7 * M_PI, unit: CEquation.SIConstUnits.mu0, description: "Permeability of a vacuum." },
+        "G": { value: 6.67428e-11, unit: CEquation.SIConstUnits.G, description: "Gravitational constant." },
+        "h": { value: 6.62606896e-34, unit: CEquation.SIConstUnits.h, description: "Planck's constant." },
+        "hbar": { value: 6.62606896e-34 / (2.00 * M_PI), unit: CEquation.SIConstUnits.h, description: "Reduced Planck's constant." },
+        "e": { value: 1.602176487e-19, unit: CEquation.SIConstUnits.e, description: "Electrical charge of an electron." },
+        "m_alpha": { value: 6.64465620e-27, unit: CEquation.SIUnits.kg, description: "Mass of alpha particle." },
+        "m_e": { value: 9.10938215e-31, unit: CEquation.SIUnits.kg, description: "Mass of electron." },
+        "m_n": { value: 1.674927211e-27, unit: CEquation.SIUnits.kg, description: "Mass of neutron." },
+        "m_p": { value: 1.672621637e-27, unit: CEquation.SIUnits.kg, description: "Mass of proton." },
+        "m_u": { value: 1.660538782e-27, unit: CEquation.SIUnits.kg, description: "Atomic mass constant." },
+        "N_A": { value: 6.02214179e23, unit: CEquation.SIUnits.dimensionless, description: "Avogadro's constant." },
+        "kB": { value: 1.3806504e-23, unit: CEquation.SIUnits.dimensionless, description: "Boltzmann's constant." },
+        "R": { value: 8.314472, unit: CEquation.SIConstUnits.R, description: "Molar mass constant." },
      };
      
      CEquation.SIConstRe =
