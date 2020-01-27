@@ -26,15 +26,17 @@
                     err = msg;
                 });
                 divStack.innerText = tokens && CEquation.utils.toString(tokens) || "";
-                const ans = tokens && CEquation.eval(tokens, function (msg) {
+                const ans = tokens && CEquation.evaluate(tokens, function (msg) {
                     err = msg
                 });
                 txtAns.value = err ? new Array(errPos).join(" ") + " ^ " + err
                     : ans && ans.value || "";
             }
 
-            CEquation.runTests();
-            document.getElementById("butTests").addEventListener("click", function () {
+            const tests = CEquation.runTests();
+            const butTests = document.getElementById("butTests");
+            butTests.innerText = `Tests: ${tests.passed} passed, ${tests.failed} failed, ${tests.total} total`;
+            butTests.addEventListener("click", function () {
                 CEquation.runTests();
             });
 
@@ -55,7 +57,7 @@
                 x-value="1 m"
                 x-value="1 kg/s"
                 x-value="x + sin(y * pi) + max(0, 1)"
-                value="(1 + 2) * 3 - sin(.5) / sqrt(2)"
+                value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
                 /></td>
         </tr>
         <tr>

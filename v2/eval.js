@@ -1,4 +1,6 @@
 (function (CEquation) {
+    "use strict";
+
     /**
      * Evaluate a single value token.
      * @param {object} token Token to evaluate.
@@ -102,7 +104,7 @@
      * @param {Array} tokens Array of tokens.
      * @param {function=} evalError Custom error handler.
      */
-    const eval = function (tokens, evalError) {
+    const evaluate = function (tokens, evalError) {
         evalError = evalError || CEquation.utils.evalError;
         if (!tokens) {
             return evalError(CEquation.EVAL_ERROR.BAD_TOKEN);
@@ -136,5 +138,5 @@
         return valss.pop();
     };
 
-    CEquation.eval = eval;
+    CEquation.evaluate = evaluate;
 }(CEquation));

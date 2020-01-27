@@ -1,4 +1,6 @@
 (function (CEquation) {
+    "use strict";
+    
     const parse = function (equation, parseError) {
         const OP = CEquation.OP;
         const LOOKFOR = CEquation.LOOKFOR;
@@ -36,7 +38,7 @@
                     match = CEquation.UnaryOpRe.exec(equation.substr(pos));
                     if (match) {
                         const fn = match[1];
-                        op = CEquation.opch[fn];
+                        const op = CEquation.opch[fn];
                         opss.push({
                             op: op + OP.UNARY + bracketOffset,
                             pos: pos
@@ -45,13 +47,22 @@
                         lookFor = LOOKFOR.BRACKET;
                         break;
                     }
-                    // op = CEquation.opch6[equation.substr(pos, 6)]
-                    //     || CEquation.opch5[equation.substr(pos, 5)]
-                    //     || CEquation.opch4[equation.substr(pos, 4)]
-                    //     || CEquation.opch3[equation.substr(pos, 3)];
-                    // if (op) {
-                    //     console.log(op);
-                    // }
+
+                    //---dimensioned constant---
+                    match = CEquation.SIConstRe.exec(equation.substr(pos));
+                    if (match) {
+                        const name = match[1];
+                        const c = CEquation.SIConst[name];
+                        tokens.push({
+                            typ: VOTYP.VAL,
+                            value: c.value,
+                            pos: pos
+                        });
+                        parseLength = name.length;
+                        lookFor = LOOKFOR.BINARYOP;
+                        break;
+                    }
+
                     if (false) {
                         // valid char for 
                         // variables, 

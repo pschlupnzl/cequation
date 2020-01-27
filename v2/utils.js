@@ -1,4 +1,6 @@
 (function (CEquation) {
+    "use strict"
+    
     /**
      * Assert that the value is truthy.
      * @param {boolean} test Testing value.

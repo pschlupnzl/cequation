@@ -1,4 +1,6 @@
 (function (CEquation) {
+    "use strict"
+
     const OP = CEquation.OP;
     const VOTYP = CEquation.VOTYP;
     const M_PI_180 = CEquation.M_PI_180;
@@ -92,6 +94,26 @@
         { eq: "atand(0.5)", ans: { value: M_180_PI * Math.atan(0.5) } },
         { eq: "!(0.5)", ans: { value: (0.5 == 0.00) ? 1.00 : 0.00 } },
         { eq: "sign(0.5)", ans: { value: (0.5 == 0.00) ? 0.00 : (0.5 < 0.00) ? -1.00 : 1.00 } },
+
+        // Constants.
+        { eq: "pi", ans: { value: CEquation.SIConst.pi.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.pi.value, pos: 0 }] },
+        { eq: "c", ans: { value: CEquation.SIConst.c.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.c.value, pos: 0 }] },
+        { eq: "Z0", ans: { value: CEquation.SIConst.Z0.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.Z0.value, pos: 0 }] },
+        { eq: "e0", ans: { value: CEquation.SIConst.e0.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.e0.value, pos: 0 }] },
+        { eq: "mu0", ans: { value: CEquation.SIConst.mu0.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.mu0.value, pos: 0 }] },
+        { eq: "G", ans: { value: CEquation.SIConst.G.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.G.value, pos: 0 }] },
+        { eq: "h", ans: { value: CEquation.SIConst.h.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.h.value, pos: 0 }] },
+        { eq: "hbar", ans: { value: CEquation.SIConst.hbar.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.hbar.value, pos: 0 }] },
+        { eq: "e", ans: { value: CEquation.SIConst.e.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.e.value, pos: 0 }] },
+        { eq: "m_alpha", ans: { value: CEquation.SIConst.m_alpha.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.m_alpha.value, pos: 0 }] },
+        { eq: "m_e", ans: { value: CEquation.SIConst.m_e.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.m_e.value, pos: 0 }] },
+        { eq: "m_n", ans: { value: CEquation.SIConst.m_n.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.m_n.value, pos: 0 }] },
+        { eq: "m_p", ans: { value: CEquation.SIConst.m_p.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.m_p.value, pos: 0 }] },
+        { eq: "m_u", ans: { value: CEquation.SIConst.m_u.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.m_u.value, pos: 0 }] },
+        { eq: "N_A", ans: { value: CEquation.SIConst.N_A.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.N_A.value, pos: 0 }] },
+        { eq: "kB", ans: { value: CEquation.SIConst.kB.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.kB.value, pos: 0 }] },
+        { eq: "R", ans: { value: CEquation.SIConst.R.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.R.value, pos: 0 }] },
+
     ];
 
     const runTests = function () {
@@ -107,12 +129,17 @@
             }
         }
         console.log(`${passed} passed, ${failed} failed, ${testCases.length} total`);
+        return {
+            passed: passed,
+            failed: failed,
+            total: testCases.length
+        };
     };
 
     const runTest = function (test) {
         let pass = true;
         const tokens = CEquation.parse(test.eq);
-        const ans = CEquation.eval(tokens);
+        const ans = CEquation.evaluate(tokens);
         pass = assertEqual(test.ans.value, ans.value, "Mismatch answer") && pass;
 
         if (test.tokens) {

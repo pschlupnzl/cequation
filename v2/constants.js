@@ -1,6 +1,10 @@
 (function (CEquation) {
-    CEquation.M_PI_180 = Math.PI / 180.0;
-    CEquation.M_180_PI = 180.0 / Math.PI;
+    "use strict";
+    
+    const M_PI = Math.PI;
+    CEquation.M_PI = M_PI;
+    CEquation.M_PI_180 = M_PI / 180.0;
+    CEquation.M_180_PI = 180.0 / M_PI;
 
     /**
      * Operator constants. These are also precedence values.
@@ -137,6 +141,32 @@
     };
 
     /**
+     * Constants.
+     */
+    CEquation.SIConst = {
+        "pi": { value: M_PI, description: "Ratio of circumference of circle to its diameter." },
+        "c": { value: 299792458, description: "Speed of light in vacuum." },
+        "Z0": { value: 376.730313461 },
+        "e0": { value: 8.854187817e-12, description: "Permittivity of a vacuum." },
+        "mu0": { value: 4e-7 * M_PI, description: "Permeability of a vacuum." },
+        "G": { value: 6.67428e-11, description: "Gravitational constant." },
+        "h": { value: 6.62606896e-34, description: "Planck's constant." },
+        "hbar": { value: 6.62606896e-34 / (2.00 * M_PI), description: "Reduced Planck's constant." },
+        "e": { value: 1.602176487e-19, description: "Electrical charge of an electron." },
+        "m_alpha": { value: 6.64465620e-27, description: "Mass of alpha particle." },
+        "m_e": { value: 9.10938215e-31, description: "Mass of electron." },
+        "m_n": { value: 1.674927211e-27, description: "Mass of neutron." },
+        "m_p": { value: 1.672621637e-27, description: "Mass of proton." },
+        "m_u": { value: 1.660538782e-27, description: "Atomic mass constant." },
+        "N_A": { value: 6.02214179e23, description: "Avogadro's constant." },
+        "kB": { value: 1.3806504e-23, description: "Boltzmann's constant." },
+        "R": { value: 8.314472, description: "Molar mass constant." },
+     };
+     
+     CEquation.SIConstRe =
+        /^(m_alpha|hbar|m_e|m_n|m_p|m_u|N_A|mu0|pi|kB|Z0|e0|c|G|h|e|R)/;
+     
+         /**
      * Lexer parse status.
      */
     CEquation.LOOKFOR = {
