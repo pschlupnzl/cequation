@@ -154,10 +154,12 @@
         "m":    [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0], //  1 EQSI_M   = length
         "a":    [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0], //  2 EQSI_A   = electric current
         "s":    [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0], //  3 EQSI_S   = time
-        "k":    [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0], //  4 EQSI_K   = therm. temperature
+        "K":    [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0], //  4 EQSI_K   = therm. temperature
         "mol":  [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0], //  5 EQSI_MOL = amount of substance
         "cd":   [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0], //  6 EQSI_CD  = lum. intensity
     };
+
+    CEquation.SIUnitsRe = /^(|mol|cd|kg|m|a|s|k)/;
 
     CEquation.SIDerivedUnits = {
         //---SI Derived Units------------------------
@@ -169,8 +171,10 @@
         "C":    [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0], // 12 C  = A s
         "V":    [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0], // 13 V  = W/A
         "F":    [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], // 14 F  = C/V
-        "Ohm":  [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0], // 15 Ohm= V/A
+        "ohm":  [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0], // 15 Ohm= V/A
     };
+
+    CEquation.SIDerivedUnitsRe = /^(ohm|Pa|Hz|W|J|N|C|V|F)/;
 
     CEquation.SIInputUnits = {
         //---Allowed INPUT units only----------------
@@ -185,6 +189,8 @@
         "in":   [    0,   1.0,     0,     0,     0,     0,     0,    2.54e-2, 0], // 24 in -> m
         "eV":   [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0], // 25 eV -> J
     };
+
+    CEquation.SIInputUnitsRe = /^(degC|degF|nmi|eV|mi|yd|ft|in|g|L)/;
      
         //---Dimensioned Constants-------------------
     CEquation.SIConstUnits = {
@@ -196,11 +202,7 @@
         "N_A":  [    0,     0,     0,     0,     0,  -1.0,     0,    1.0,     0], //  5 N_A = 1/mol
         "kB":   [  1.0,   2.0,     0,  -2.0,  -1.0,     0,     0,    1.0,     0], //  6 kB  = J/K
         "R":    [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0], //  7 R   = J/K mol
-
-        //TODO: Check these!
-        "e0": null,
-        "e": null,
-        "R": null,
+        "e":    [    0,     0,   1.0,   1.0,     0,     0,     0,    1.0,     0], // e  = C        ,
      };
      
     /**
