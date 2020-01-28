@@ -6,10 +6,9 @@
         const LOOKFOR = CEquation.LOOKFOR;
         const VOTYP = CEquation.VOTYP;
         const PARSE_ERROR = CEquation.PARSE_ERROR;
+        const Unit = CEquation.Unit;
         const utils = CEquation.utils;
         parseError = parseError || utils.parseError;
-
-        const zeroUnit = [0, 0, 0, 0, 0, 0, 0];
 
         let tokens = [];
         let opss = []; // Stack of pending operations.
@@ -56,6 +55,7 @@
                         tokens.push({
                             typ: VOTYP.VAL,
                             value: c.value,
+                            unit: new Unit(c.units),
                             pos: pos
                         });
                         parseLength = name.length;
@@ -79,8 +79,8 @@
                         tokens.push({
                             typ: VOTYP.VAL,
                             value: -1.00,
-                            pos: pos,
-                            units: zeroUnit
+                            unit: new Unit(),
+                            pos: pos
                         });
                         opss.push({
                             op: OP.MUL + bracketOffset,
@@ -107,6 +107,7 @@
                         tokens.push({
                             typ: VOTYP.VAL,
                             value: Number(scan),
+                            unit: new Unit(),
                             pos: pos
                         });
                         parseLength = scan.length;

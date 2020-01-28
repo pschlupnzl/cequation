@@ -2,10 +2,12 @@
 <html>
 <head>
     <title>CEquation</title>
+    <meta charset="utf-8">
     <link rel="stylesheet" href="style.css" />
     <script src="v2/cequation.js"></script>
     <script src="v2/constants.js"></script>
     <script src="v2/utils.js"></script>
+    <script src="v2/unit.js"></script>
     <script src="v2/parse.js"></script>
     <script src="v2/eval.js"></script>
     <script src="v2/tests.js"></script>
@@ -22,12 +24,17 @@
                 let err = null;
                 let errPos = 0;
                 const tokens = CEquation.parse(eqn, function (eq, pos, msg, tok) {
-                    errPos = pos;
-                    err = msg;
+                    if (!err) {
+                        errPos = pos;
+                        err = msg;
+                    }
                 });
                 divStack.innerText = tokens && CEquation.utils.toString(tokens) || "";
-                const ans = tokens && CEquation.evaluate(tokens, function (msg) {
-                    err = msg
+                const ans = tokens && CEquation.evaluate(tokens, function (pos, msg) {
+                    if (!err) {
+                        errPos = pos;
+                        err = msg;
+                    }
                 });
                 txtAns.value = err ? new Array(errPos).join(" ") + " ^ " + err
                     : ans && ans.value || "";
@@ -57,12 +64,13 @@
                 x-value="1 m"
                 x-value="1 kg/s"
                 x-value="x + sin(y * pi) + max(0, 1)"
-                value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
+                x-value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
+                value="sin(2+c)"
                 /></td>
         </tr>
         <tr>
             <td>Ans = </td>
-            <td><input type="text" id="txtAns" class="monospace"/></td>
+            <td><input type="text" id="txtAns" class="monospace" disabled/></td>
         </tr>
     </table>
 

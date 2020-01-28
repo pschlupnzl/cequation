@@ -144,8 +144,6 @@
      * Units.
      */
 
-    CEquation.SIUnit;
-
     CEquation.SIUnits = {
         "dimensionless": [0, 0, 0, 0, 0, 0, 0, 1.0, 0],
         //          kg      m      A      s      K     mol    cd    scale offset
@@ -198,32 +196,30 @@
         "R":    [  1.0,   2.0,     0,  -2.0,  -1.0,  -1.0,     0,    1.0,     0], //  7 R   = J/K mol
 
         //TODO: Check these!
-        "e0": null,
         "e": null,
-        "R": null,
      };
      
     /**
      * Constants.
      */
     CEquation.SIConst = {
-        "pi": { value: M_PI, unit: CEquation.SIUnits.dimensionless, description: "Ratio of circumference of circle to its diameter." },
-        "c": { value: 299792458, unit: CEquation.SIConstUnits.c, description: "Speed of light in vacuum." },
-        "Z0": { value: 376.730313461, unit: CEquation.SIUnits.ohm, description: "Impedance of free space."},
-        "e0": { value: 8.854187817e-12, unit: CEquation.SIConstUnits.e0, description: "Permittivity of a vacuum." },
-        "mu0": { value: 4e-7 * M_PI, unit: CEquation.SIConstUnits.mu0, description: "Permeability of a vacuum." },
-        "G": { value: 6.67428e-11, unit: CEquation.SIConstUnits.G, description: "Gravitational constant." },
-        "h": { value: 6.62606896e-34, unit: CEquation.SIConstUnits.h, description: "Planck's constant." },
-        "hbar": { value: 6.62606896e-34 / (2.00 * M_PI), unit: CEquation.SIConstUnits.h, description: "Reduced Planck's constant." },
-        "e": { value: 1.602176487e-19, unit: CEquation.SIConstUnits.e, description: "Electrical charge of an electron." },
-        "m_alpha": { value: 6.64465620e-27, unit: CEquation.SIUnits.kg, description: "Mass of alpha particle." },
-        "m_e": { value: 9.10938215e-31, unit: CEquation.SIUnits.kg, description: "Mass of electron." },
-        "m_n": { value: 1.674927211e-27, unit: CEquation.SIUnits.kg, description: "Mass of neutron." },
-        "m_p": { value: 1.672621637e-27, unit: CEquation.SIUnits.kg, description: "Mass of proton." },
-        "m_u": { value: 1.660538782e-27, unit: CEquation.SIUnits.kg, description: "Atomic mass constant." },
-        "N_A": { value: 6.02214179e23, unit: CEquation.SIUnits.dimensionless, description: "Avogadro's constant." },
-        "kB": { value: 1.3806504e-23, unit: CEquation.SIUnits.dimensionless, description: "Boltzmann's constant." },
-        "R": { value: 8.314472, unit: CEquation.SIConstUnits.R, description: "Molar mass constant." },
+        "pi": { value: M_PI, units: CEquation.SIUnits.dimensionless, description: "Ratio of circumference of circle to its diameter." },
+        "c": { value: 299792458, units: CEquation.SIConstUnits.c, description: "Speed of light in vacuum." },
+        "Z0": { value: 376.730313461, units: CEquation.SIUnits.ohm, description: "Impedance of free space."},
+        "e0": { value: 8.854187817e-12, units: CEquation.SIConstUnits.e0, description: "Permittivity of a vacuum." },
+        "mu0": { value: 4e-7 * M_PI, units: CEquation.SIConstUnits.mu0, description: "Permeability of a vacuum." },
+        "G": { value: 6.67428e-11, units: CEquation.SIConstUnits.G, description: "Gravitational constant." },
+        "h": { value: 6.62606896e-34, units: CEquation.SIConstUnits.h, description: "Planck's constant." },
+        "hbar": { value: 6.62606896e-34 / (2.00 * M_PI), units: CEquation.SIConstUnits.h, description: "Reduced Planck's constant." },
+        "e": { value: 1.602176487e-19, units: CEquation.SIConstUnits.e, description: "Electrical charge of an electron." },
+        "m_alpha": { value: 6.64465620e-27, units: CEquation.SIUnits.kg, description: "Mass of alpha particle." },
+        "m_e": { value: 9.10938215e-31, units: CEquation.SIUnits.kg, description: "Mass of electron." },
+        "m_n": { value: 1.674927211e-27, units: CEquation.SIUnits.kg, description: "Mass of neutron." },
+        "m_p": { value: 1.672621637e-27, units: CEquation.SIUnits.kg, description: "Mass of proton." },
+        "m_u": { value: 1.660538782e-27, units: CEquation.SIUnits.kg, description: "Atomic mass constant." },
+        "N_A": { value: 6.02214179e23, units: CEquation.SIUnits.dimensionless, description: "Avogadro's constant." },
+        "kB": { value: 1.3806504e-23, units: CEquation.SIUnits.dimensionless, description: "Boltzmann's constant." },
+        "R": { value: 8.314472, units: CEquation.SIConstUnits.R, description: "Molar mass constant." },
      };
      
      CEquation.SIConstRe =
@@ -283,8 +279,8 @@
         // CONTAINSVAR: "CONTAINSVAR",    // contains variables than are not supplied
         BAD_TOKEN: "BAD_TOKEN",                   // not right type of token
         // ASSIGNNOTALLOWED: "ASSIGNNOTALLOWED",    // not allowed to change variables
-        // UNITMISMATCH: "UNITMISMATCH",    // mismatched units
-        // UNITNOTDIMLESS: "UNITNOTDIMLESS",    // unit on expected dimensionless arg
+        UNIT_MISMATCH: "UNIT_MISMATCH",           // mismatched units
+        UNIT_NOT_DIMLESS: "UNIT_NOT_DIMLESS",     // unit on expected dimensionless arg
         // NOEQUATION: "NOEQUATION",    // there is no equation to evaluate
     };
 }(CEquation));

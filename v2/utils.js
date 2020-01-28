@@ -37,7 +37,7 @@
                 return [
                     new Array(tok.pos).join(" "),
                     "| ",
-                    tok.typ === CEquation.VOTYP.VAL ? " Value: " + tok.value :
+                    tok.typ === CEquation.VOTYP.VAL ? " Value: " + tok.value + " " + tok.unit.toString() :
                     tok.typ === CEquation.VOTYP.OP ? " Operator: " + tok.op :
                     "??"
                 ].join("");
@@ -60,10 +60,11 @@
     
     /**
      * Default error handling if none supplied to the evaluator.
+     * @param {number} pos Index where error occurred.
      * @param {string} message Error message.
      */
-    const evalError = function (message) {
-        console.log("Evaluation error: " + message);
+    const evalError = function (pos, message) {
+        console.log((new Array(pos + 1)).join("-") + "| " + message);
     };
 
     /**
