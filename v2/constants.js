@@ -150,16 +150,11 @@
         //---SI Base Units---------------------------
         "kg":   [  1.0,     0,     0,     0,     0,     0,     0,    1.0,     0], //  0 EQSI_KG  = mass
         "m":    [    0,   1.0,     0,     0,     0,     0,     0,    1.0,     0], //  1 EQSI_M   = length
-        "a":    [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0], //  2 EQSI_A   = electric current
+        "A":    [    0,     0,   1.0,     0,     0,     0,     0,    1.0,     0], //  2 EQSI_A   = electric current
         "s":    [    0,     0,     0,   1.0,     0,     0,     0,    1.0,     0], //  3 EQSI_S   = time
         "K":    [    0,     0,     0,     0,   1.0,     0,     0,    1.0,     0], //  4 EQSI_K   = therm. temperature
         "mol":  [    0,     0,     0,     0,     0,   1.0,     0,    1.0,     0], //  5 EQSI_MOL = amount of substance
         "cd":   [    0,     0,     0,     0,     0,     0,   1.0,    1.0,     0], //  6 EQSI_CD  = lum. intensity
-    };
-
-    CEquation.SIUnitsRe = /^(|mol|cd|kg|m|a|s|k)/;
-
-    CEquation.SIDerivedUnits = {
         //---SI Derived Units------------------------
         "W":    [  1.0,   2.0,     0,  -3.0,     0,     0,     0,    1.0,     0], //  7 W  = J/s
         "J":    [  1.0,   2.0,     0,  -2.0,     0,     0,     0,    1.0,     0], //  8 J  = N m
@@ -170,11 +165,6 @@
         "V":    [  1.0,   2.0,  -1.0,  -3.0,     0,     0,     0,    1.0,     0], // 13 V  = W/A
         "F":    [ -1.0,  -2.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], // 14 F  = C/V
         "ohm":  [  1.0,   2.0,  -2.0,  -3.0,     0,     0,     0,    1.0,     0], // 15 Ohm= V/A
-    };
-
-    CEquation.SIDerivedUnitsRe = /^(ohm|Pa|Hz|W|J|N|C|V|F)/;
-
-    CEquation.SIInputUnits = {
         //---Allowed INPUT units only----------------
         "g":    [  1.0,     0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 16 g -> kg
         "L":    [    0,   3.0,     0,     0,     0,     0,     0,    1.0e-3,  0], // 17 L -> m3
@@ -188,9 +178,34 @@
         "eV":   [  1.0,   2.0,     0,  -2.0,     0,     0,   0,1.60217646e-19,0], // 25 eV -> J
     };
 
-    CEquation.SIInputUnitsRe = /^(degC|degF|nmi|eV|mi|yd|ft|in|g|L)/;
-     
-        //---Dimensioned Constants-------------------
+    CEquation.SIUnitsRe = /^(|mol|cd|kg|m|a|s|K)/;
+    CEquation.SIDerivedUnitsRe = /^(ohm|Pa|Hz|W|J|N|C|V|F)/;
+    CEquation.SIInputUnitsRe = /^(degC|degF|mol|nmi|ohm|Hz|Pa|cd|eV|ft|in|kg|mi|yd|A|C|F|J|K|L|N|V|W|g|m|s)/;
+
+    //---Prefixes---
+    CEquation.SIPrefix = {
+        "Y": 1e24,
+        "Z": 1e21,
+        "E": 1e18,
+        "P": 1e15,
+        "T": 1e12,
+        "G": 1e9,
+        "M": 1e6,
+        "k": 1e3,
+        "h": 1e2,
+        "d": 1e-1,
+        "c": 1e-2,
+        "m": 1e-3,
+        "u": 1e-6,
+        "n": 1e-9,
+        "p": 1e-12,
+        "f": 1e-15,
+        "a": 1e-18,
+        "z": 1e-21
+    };
+    CEquation.SIPrefixRe = /^(Y|Z|E|P|T|G|M|k|h|d|c|m|u|n|p|f|a|z)/;
+    
+    //---Dimensioned Constants-------------------
     CEquation.SIConstUnits = {
         "e0":   [ -1.0,  -3.0,   2.0,   4.0,     0,     0,     0,    1.0,     0], //  1 e0  = F/m
         "c":    [    0,   1.0,     0,  -1.0,     0,     0,     0,    1.0,     0], //  0 c   = m/s

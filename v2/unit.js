@@ -4,19 +4,21 @@
     /**
      * Class to handle processing of units.
      * @param {Array} units Optional units to set when creating this object.
+     * @param {number=} scale Optional scale, if not included in units array.
+     * @param {number=} offset Optional offset, if not included in units array.
      */
-    const Unit = function (units) {
+    const Unit = function (units, scale, offset) {
         this.coeffs = [0, 0, 0, 0, 0, 0, 0];
         this.scale = 1.0;
         this.offset = 0.0;
         if (units) {
-            this.set(units);
+            this.set(units, scale, offset);
         }
         return this;
     };
 
     /** SI Unit symbols. */
-    Unit.symbols = [ "kg", "m", "a", "s", "K", "mol", "cd"];
+    Unit.symbols = [ "kg", "m", "A", "s", "K", "mol", "cd"];
 
     /** Unicode superscript characters. */
     Unit.superscripts = "⁻¹²³⁴⁵⁶⁷⁸⁹";
@@ -33,8 +35,8 @@
      */
     Unit.prototype.set = function (units, scale, offset) {
         this.coeffs.forEach((coeff, index, coeffs) => coeffs[index] = units[index]);
-        this.scale = units[7] || scale || 1.0;
-        this.offset = units[8] || offset || 0.0;
+        this.scale = (scale !== undefined ? scale : units[7]) || 1.0;
+        this.offset = (offset !== undefined ? offset : units[8]) || 0.0;
         return this;
     };
 
@@ -45,7 +47,8 @@
      * @returns {string} String of units with exponents.
      */
     Unit.prototype.toString = function (sep) {
-        return Unit.symbols.map((symbol, index) => {
+        return (this.scale === 1 ? "" : this.scale)
+            + Unit.symbols.map((symbol, index) => {
             const coeff = this.coeffs[index];
             return !coeff ? "" :
                 coeff === 1 ? symbol :
@@ -110,6 +113,16 @@
             this.offset + unit.offset);
     };
     
+    /**
+     * Returns a new unit scaled by e.g. a prefix value.
+     * @this {object:Unit} Unit to scale.
+     * @param {number} scalar Value to scale by.
+     * @returns {object:Unit} New unit object.
+     */
+    Unit.prototype.scalar = function (scalar) {
+        return new Unit(this.coeffs, this.scale * scalar, this.offset);
+    };
+
     /**
      * Raises the unit by the given power.
      * @this {object:Unit} Unit to raise to the power.

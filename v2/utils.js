@@ -39,6 +39,7 @@
                     "| ",
                     tok.typ === CEquation.VOTYP.VAL ? " Value: " + tok.value + " " + tok.unit.toString() :
                     tok.typ === CEquation.VOTYP.OP ? " Operator: " + tok.op :
+                    tok.typ === CEquation.VOTYP.UNIT ? " Unit: " + tok.unit.toString() :
                     "??"
                 ].join("");
             })

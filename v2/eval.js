@@ -170,6 +170,7 @@
                 case VOTYP.VAL:
                     evalValueToken(token, valss, evalError);
                     break;
+
                 case VOTYP.OP:
                     const op = token.op;
                     if (op < OP.UNARY) {
@@ -180,6 +181,11 @@
                         return evalError(0, "Operator type not yet implemented");
                     }
                     break;
+                    
+                case VOTYP.UNIT:
+                    // TODO: Handle units.
+                    break;
+                    
                 default: return evalError(token.pos, CEquation.EVAL_ERROR.UNKNOWN_TOKEN_TYPE);
             }
         });
