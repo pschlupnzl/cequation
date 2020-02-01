@@ -38,10 +38,15 @@
                         err = msg;
                     }
                 });
-                console.log("ans=", ans)
-                txtAns.innerText = err ? new Array(errPos).join(" ") + " ^ " + err
-                    : ans && ans.value || "";
-                txtAnsUnit.innerText = ans ? ans.unit.toString() : "";
+                if (err) {
+                    txtAns.innerText = new Array(errPos).join(" ") + " ^ " + err;
+                    txtAnsUnit.innerText = "";
+                } else {
+                    
+                    CEquation.Unit.simplify(ans);
+                    txtAns.innerText = ans.value;
+                    txtAnsUnit.innerText = ans.unit.toString();
+                }
             }
 
             const tests = CEquation.runTests();
@@ -66,7 +71,7 @@
                 class="monospace"
                 x-value="  1 +  2*3  "
                 x-value="1 m"
-                value="1 kg"
+                value="10000s"
                 x-value="x + sin(y * pi) + max(0, 1)"
                 x-value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
                 x-value="3 mCkgs"

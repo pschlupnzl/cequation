@@ -204,6 +204,8 @@
         "z": 1e-21
     };
     CEquation.SIPrefixRe = /^(Y|Z|E|P|T|G|M|k|h|d|c|m|u|n|p|f|a|z)/;
+    CEquation.SIPrefixMax = 24;
+    CEquation.SIPrefixMin = -21;
     
     //---Dimensioned Constants-------------------
     CEquation.SIConstUnits = {

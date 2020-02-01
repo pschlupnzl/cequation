@@ -39,16 +39,14 @@
             }
         }
         return tokens
-            .map(function (tok) {
-                return [
+            .map(tok => [
                     new Array(tok.pos).join(" "),
                     "|",
                     tok.typ === CEquation.VOTYP.VAL ? "Value: " + tok.value + " " + tok.unit.toString() :
                     tok.typ === CEquation.VOTYP.OP ? "Operator: " + (kopch[tok.op] || tok.op) :
                     tok.typ === CEquation.VOTYP.UNIT ? "Unit: " + tok.unit.toString() :
                     "??"
-                ].join("");
-            })
+                ].join(""))
             .join("\n");
     };
 

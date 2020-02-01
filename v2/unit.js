@@ -11,6 +11,7 @@
         this.coeffs = [0, 0, 0, 0, 0, 0, 0];
         this.scale = 1.0;
         this.offset = 0.0;
+        this.prefix = ""; // Used for formatting only.
         if (units) {
             this.set(units, scale, offset);
         }
@@ -48,6 +49,7 @@
      */
     Unit.prototype.toString = function (sep) {
         return (this.scale === 1 ? "" : this.scale)
+            + this.prefix
             + Unit.symbols.map((symbol, index) => {
             const coeff = this.coeffs[index];
             return !coeff ? "" :
@@ -79,6 +81,36 @@
             "</span>",
             "</span>"
         ].join("");
+    };
+
+    /**
+     * Apply and simplify the units to the value.
+     * @param {object} tok Object with "value" and "unit" members.
+     */
+    Unit.simplify = function (token) {
+        const SIPrefix = CEquation.SIPrefix;
+        const unit = token.unit;
+        let value = token.value * token.unit.scale;
+        let prefix = "";
+        
+        // If only single positive powers (e.g. kgAs), simplify with prefix.
+        const hasPowers = unit.coeffs.some(coeff => !!coeff);
+        const singlePowers = unit.coeffs.every(coeff => coeff === 1 || coeff === 0);
+        if (value && hasPowers && singlePowers) {
+            // const sign = value < 0 ? -1 : +1;
+            const mag = Math.floor(Math.log10(Math.abs(value))); // Order of magnitude.
+            let pow = 3 * Math.floor((mag) / 3); // Power to round to.
+            pow = pow > CEquation.SIPrefixMax ? CEquation.SIPrefixMax :
+                pow < CEquation.SIPrefixMin ? CEquation.SIPrefixMin : pow;
+            if (pow) {
+                prefix = Object.keys(SIPrefix).find(key => Math.floor(Math.log10(SIPrefix[key])) === pow);
+                value /= Math.pow(10, pow);
+            }
+        }
+        
+        token.value = value;
+        token.unit.scale = 1.0;
+        token.unit.prefix = prefix;
     };
 
     /**

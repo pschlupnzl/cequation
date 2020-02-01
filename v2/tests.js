@@ -144,7 +144,7 @@
 
         if (test.tokens) {
             pass = assertEqual(test.tokens.length, tokens.length, "Mismatch tokens length") && pass;
-            tokens.forEach(function (token, index) {
+            tokens.forEach((token, index) => {
                 const testToken = test.tokens[index];
                 pass = assertEqual(token.typ, testToken.typ, "Mismatch type token " + index) && pass;
                 pass = assertEqual(token.pos, testToken.pos, "Mismatch position token " + index) && pass;

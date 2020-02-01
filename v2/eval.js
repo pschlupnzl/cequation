@@ -122,7 +122,7 @@
             case OP.ABS: vals = { value: Math.abs(arg.value), unit: arg.unit }; break;
             case OP.SQRT: vals = { value: Math.sqrt(arg.value), unit: arg.unit.power(0.5) }; break;
             case OP.EXP: vals = { value: Math.exp(arg.value) }; break;
-            case OP.LOG10: vals = { value: Math.log(arg.value) / Math.log(10.00) }; break;
+            case OP.LOG10: vals = { value: Math.log10(arg.value) }; break;
             case OP.LOG: vals = { value: Math.log(arg.value) }; break;
             case OP.CEIL: vals = { value: Math.ceil(arg.value), unit: arg.unit }; break;
             case OP.FLOOR: vals = { value: Math.floor(arg.value), unit: arg.unit }; break;
@@ -180,7 +180,7 @@
         const VOTYP = CEquation.VOTYP;
         const OP = CEquation.OP;
         const valss = [];
-        tokens.forEach(function (token) {
+        tokens.forEach(token => {
             switch (token.typ) {
                 case VOTYP.VAL:
                     evalValueToken(token, valss, evalError);
