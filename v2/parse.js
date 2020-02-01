@@ -34,7 +34,6 @@
                     pos: pos
                 });
             }
-            console.log(JSON.stringify(tokens[tokens.length - 1]))
             return unitName.length + (prefixName ? prefixName.length : 0);
         };
 
@@ -163,7 +162,6 @@
             const subeq = equation.substr(pos);
             let match;
 
-            // console.log("Look for " + lookFor + " at -->" + equation.substr(pos));
             switch (lookFor) {
 
                 //----------------------------------------

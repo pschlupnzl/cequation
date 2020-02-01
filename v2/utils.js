@@ -32,14 +32,20 @@
      * @returns {string} The formatted string.
      */
     const toString = function (tokens) {
+        const kopch = {};
+        for (let key in CEquation.opch) {
+            if (CEquation.opch.hasOwnProperty(key)) {
+                kopch[CEquation.opch[key]] = key;
+            }
+        }
         return tokens
             .map(function (tok) {
                 return [
                     new Array(tok.pos).join(" "),
-                    "| ",
-                    tok.typ === CEquation.VOTYP.VAL ? " Value: " + tok.value + " " + tok.unit.toString() :
-                    tok.typ === CEquation.VOTYP.OP ? " Operator: " + tok.op :
-                    tok.typ === CEquation.VOTYP.UNIT ? " Unit: " + tok.unit.toString() :
+                    "|",
+                    tok.typ === CEquation.VOTYP.VAL ? "Value: " + tok.value + " " + tok.unit.toString() :
+                    tok.typ === CEquation.VOTYP.OP ? "Operator: " + (kopch[tok.op] || tok.op) :
+                    tok.typ === CEquation.VOTYP.UNIT ? "Unit: " + tok.unit.toString() :
                     "??"
                 ].join("");
             })

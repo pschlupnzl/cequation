@@ -5,7 +5,7 @@
      * Evaluate a single value token.
      * @param {object} token Token to evaluate.
      * @param {Array} valss Reference to array of stack. 
-     * @param {function=} evalError Custom error handler.
+     * @param {function} evalError Custom error handler (not used).
      */
     const evalValueToken = function (token, valss, evalError) {
         valss.push({ 
@@ -19,7 +19,7 @@
      * Evaluate a binary operator token.
      * @param {object} token Token to evaluate.
      * @param {Array} valss Reference to array of stack. 
-     * @param {function=} evalError Custom error handler.
+     * @param {function} evalError Custom error handler.
      */
     const evalBinaryOpToken = function (token, valss, evalError) {
         if (valss.length < 2) {
@@ -77,7 +77,7 @@
      * Evaluate a Unary operator token.
      * @param {object} token Token to evaluate.
      * @param {Array} valss Reference to array of stack. 
-     * @param {function=} evalError Custom error handler.
+     * @param {function} evalError Custom error handler.
      */
     const evalUnaryOpToken = function (token, valss, evalError) {
         if (valss.length < 1) {
@@ -153,6 +153,21 @@
     };
 
     /**
+     * Evaluate a units token.
+     * @param {object} token Token to evaluate.
+     * @param {Array} valss Reference to array of stack. 
+     * @param {function} evalError Custom error handler.
+     */
+    const evalUnitToken = function (token, valss, evalError) {
+        if (valss.length < 1) {
+            return evalError(0, CEquation.EVAL_ERROR.STACK_UNDERFLOW);
+        }
+        const vals = valss.pop();
+        vals.unit = vals.unit.mult(token.unit);
+        valss.push(vals);
+    };
+
+    /**
      * Executes the equation, returning the result.
      * @param {Array} tokens Array of tokens.
      * @param {function=} evalError Custom error handler.
@@ -183,7 +198,7 @@
                     break;
                     
                 case VOTYP.UNIT:
-                    // TODO: Handle units.
+                    evalUnitToken(token, valss, evalError);
                     break;
                     
                 default: return evalError(token.pos, CEquation.EVAL_ERROR.UNKNOWN_TOKEN_TYPE);

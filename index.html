@@ -17,6 +17,7 @@
             const txtVarVals =  [].slice.call(document.querySelectorAll(".txtVarVal"));
             const txtEqn = document.getElementById("txtEqn");
             const txtAns = document.getElementById("txtAns");
+            const txtAnsUnit = document.getElementById("txtAnsUnit");
             const divStack = document.getElementById("divStack");
 
             const update = function () {
@@ -29,15 +30,18 @@
                         err = msg;
                     }
                 });
-                divStack.innerText = tokens && CEquation.utils.toString(tokens) || "";
+                divStack.innerText = eqn + "\n\n";
+                divStack.innerText += tokens && CEquation.utils.toString(tokens) || "";
                 const ans = tokens && CEquation.evaluate(tokens, function (pos, msg) {
                     if (!err) {
                         errPos = pos;
                         err = msg;
                     }
                 });
-                txtAns.value = err ? new Array(errPos).join(" ") + " ^ " + err
+                console.log("ans=", ans)
+                txtAns.innerText = err ? new Array(errPos).join(" ") + " ^ " + err
                     : ans && ans.value || "";
+                txtAnsUnit.innerText = ans ? ans.unit.toString() : "";
             }
 
             const tests = CEquation.runTests();
@@ -62,15 +66,18 @@
                 class="monospace"
                 x-value="  1 +  2*3  "
                 x-value="1 m"
-                x-value="1 kg/s"
+                value="1 kg"
                 x-value="x + sin(y * pi) + max(0, 1)"
                 x-value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
-                value="3 mCkgs"
+                x-value="3 mCkgs"
                 /></td>
         </tr>
         <tr>
             <td>Ans = </td>
-            <td><input type="text" id="txtAns" class="monospace" disabled/></td>
+            <td>
+                <span id="txtAns" class="monospace"></span>
+                <span id="txtAnsUnit"></span>
+            </td>
         </tr>
     </table>
 
