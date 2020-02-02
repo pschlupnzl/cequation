@@ -1,35 +1,49 @@
 (function (CEquation) {
     "use strict";
     
-    /*********************************************************
-    * ParseEquationUnits                              Private
-    * Parses the  token at  the current equation  position in
-    * terms of recognized units. This might happen:
-    *  - After a number, when a binary  operator is expected,
-    *    e.g. "1.5 s"
-    *  - After a division sign, e.g. "3.1 V/A". In this case,
-    *    the number "1" is inserted to read "3.1 V / 1 A" and
-    *    the multiplication has higher precedence.
-    * Returns iThisScan
-    *********************************************************/
+    /**
+     * ParseEquationUnits
+     * Parses the  token at  the current equation  position in
+     * terms of recognized units. This might happen:
+     *  - After a number, when a binary  operator is expected,
+     *    e.g. "1.5 s"
+     *  - After a division sign, e.g. "3.1 V/A". In this case,
+     *    the number "1" is inserted to read "3.1 V / 1 A" and
+     *    the multiplication has higher precedence.
+     * @param {string} subeq Substring of equation where to match.
+     * @param {number} pos Position in original equation.
+     * @param {Array} tokens Array of tokens to append and inspect.
+     * @param {boolean=} padWithValue Optional value indicating that a
+     *    "1" value token should be added if the unit is matched. This
+     *    is used when scanning for a unit in place of a number.
+     * @returns {number} Number of characters spanned, or 0 for no match.
+     */
     // int CEquation::_ParseEquationUnits(const char *_szEqtn, int iThisPt, int iBrktOff, TEqStack<int> &isOps, TEqStack<int> &isPos, TEqStack<VALOP> &vosParsEqn, UINT uLookFor) {
-    const parseEquationUnits = function (subeq, pos, tokens) {
+    const parseEquationUnits = function (subeq, pos, tokens, padWithValue) {
         let matchPrefix;
         let matchUnit;
 
         /** Push a new unit token, optionally with prefix, onto token stack. */
         const pushUnit = function (unitName, prefixName) {
+            const VOTYP = CEquation.VOTYP;
             let unit = new CEquation.Unit(CEquation.SIUnits[unitName]);
             if (prefixName) {
                 unit = unit.scalar(CEquation.SIPrefix[prefixName]);
             }
 
             const prevToken = tokens[tokens.length - 1];
-            if (prevToken && prevToken.typ === CEquation.VOTYP.UNIT) {
+            if (padWithValue) {
+                tokens.push({
+                    typ: VOTYP.VAL,
+                    value: 1,
+                    unit: unit,
+                    pos: pos
+                });
+            } else if (prevToken && prevToken.typ === VOTYP.UNIT) {
                 prevToken.unit = prevToken.unit.mult(unit);
             } else {
                 tokens.push({
-                    typ: CEquation.VOTYP.UNIT,
+                    typ: VOTYP.UNIT,
                     unit: unit,
                     pos: pos
                 });
@@ -193,6 +207,13 @@
                             pos: pos
                         });
                         parseLength = name.length;
+                        lookFor = LOOKFOR.BINARYOP;
+                        break;
+                    }
+
+                    //---Unit---
+                    parseLength = parseEquationUnits(subeq, pos, tokens, true);
+                    if (parseLength > 0) {
                         lookFor = LOOKFOR.BINARYOP;
                         break;
                     }

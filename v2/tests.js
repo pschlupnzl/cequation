@@ -72,7 +72,7 @@
         { eq: "abs(0.5)", ans: { value: Math.abs(0.5) } },
         { eq: "sqrt(0.5)", ans: { value: Math.sqrt(0.5) } },
         { eq: "exp(0.5)", ans: { value: Math.exp(0.5) } },
-        { eq: "log10(0.5)", ans: { value: Math.log(0.5) / Math.log(10.00) } },
+        { eq: "log10(0.5)", ans: { value: Math.log10(0.5) } },
         { eq: "log(0.5)", ans: { value: Math.log(0.5) } },
         { eq: "ceil(0.5)", ans: { value: Math.ceil(0.5) } },
         { eq: "floor(0.5)", ans: { value: Math.floor(0.5) } },
