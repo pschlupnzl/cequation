@@ -10,7 +10,7 @@
      *  - After a division sign, e.g. "3.1 V/A". In this case,
      *    the number "1" is inserted to read "3.1 V / 1 A" and
      *    the multiplication has higher precedence.
-     * @param {string} subeq Substring of equation where to match.
+     * @param {string} equation Original equation where to match.
      * @param {number} pos Position in original equation.
      * @param {Array} tokens Array of tokens to append and inspect.
      * @param {boolean=} padWithValue Optional value indicating that a
@@ -19,133 +19,91 @@
      * @returns {number} Number of characters spanned, or 0 for no match.
      */
     // int CEquation::_ParseEquationUnits(const char *_szEqtn, int iThisPt, int iBrktOff, TEqStack<int> &isOps, TEqStack<int> &isPos, TEqStack<VALOP> &vosParsEqn, UINT uLookFor) {
-    const parseEquationUnits = function (subeq, pos, tokens, padWithValue) {
-        let matchPrefix;
-        let matchUnit;
+    const parseEquationUnits = function (equation, pos, tokens, padWithValue) {
+        const VOTYP = CEquation.VOTYP;
+        const Unit = CEquation.Unit;
 
-        /** Push a new unit token, optionally with prefix, onto token stack. */
-        const pushUnit = function (unitName, prefixName) {
-            const VOTYP = CEquation.VOTYP;
-            let unit = new CEquation.Unit(CEquation.SIUnits[unitName]);
+        /** Array of units being assembled. */
+        let units = [];
+
+        /** Apply a newly matched unit to the unit total. */
+        const pushUnit = function (inverted, unitName, prefixName) {
+            let unit = new Unit(CEquation.SIUnits[unitName]);
             if (prefixName) {
                 unit = unit.scalar(CEquation.SIPrefix[prefixName]);
             }
-
-            const prevToken = tokens[tokens.length - 1];
-            if (padWithValue) {
-                tokens.push({
-                    typ: VOTYP.VAL,
-                    value: 1,
-                    unit: unit,
-                    pos: pos
-                });
-            } else if (prevToken && prevToken.typ === VOTYP.UNIT) {
-                prevToken.unit = prevToken.unit.mult(unit);
-            } else {
-                tokens.push({
-                    typ: VOTYP.UNIT,
-                    unit: unit,
-                    pos: pos
-                });
+            if (inverted) {
+                unit = unit.invert();
             }
+            units.push(unit);
             return unitName.length + (prefixName ? prefixName.length : 0);
         };
 
-        // Try matching with prefix first.
-        matchPrefix = CEquation.SIPrefixRe.exec(subeq);
-        matchUnit = CEquation.SIInputUnitsRe.exec(subeq.substring(1));
-        if (matchPrefix && matchUnit) {
-            return pushUnit(matchUnit[1], matchPrefix[1]);
+        // Scan whole unit including powers and slashes e.g. kgm^s/s^3.
+        // Expressions such as 3/s are not atomic here, they are parsed
+        // into tokens [3, 1s, div].
+        let totalLength = 0;
+        let inverted = false; // Sign of power, -ve after division solidus.
+        while (pos < equation.length) {
+            let parseLength = 0;
+            const subeq = equation.substr(pos);
+            let matchExponent
+            let matchPrefix;
+            let matchUnit;
+            
+            if (units.length > 0 && subeq[0] === "/") {
+                // Prepare for next unit to be inverted.
+                inverted = true;
+                parseLength = 1;
+            } else if (units.length > 0 && (matchExponent = /^\^(\-?[0-9]+)/.exec(subeq)) !== null) {
+                // Match a whole exponent.
+                const exponent = matchExponent[1];
+                units[units.length - 1] = units[units.length - 1].power(+exponent);
+                parseLength = exponent.length + 1;
+            } else if ((matchPrefix = CEquation.SIPrefixRe.exec(subeq)) !== null
+                && (matchUnit = CEquation.SIInputUnitsRe.exec(subeq.substr(1))) !== null) {
+                // Match prefix and unit.
+                parseLength = pushUnit(inverted, matchUnit[1], matchPrefix[1]);
+                inverted = false;
+            } else if ((matchUnit = CEquation.SIInputUnitsRe.exec(subeq)) !== null) {
+                // Matching unit alone.
+                parseLength = pushUnit(inverted, matchUnit[1]);
+                inverted = false;
+            }
+
+            if (parseLength === 0) {
+                break;
+            }
+            totalLength += parseLength;
+            pos += parseLength;
         }
 
-        // Try matching unit alone.
-        matchUnit = CEquation.SIInputUnitsRe.exec(subeq);
-        if (matchUnit) {
-            return pushUnit(matchUnit[1]);
-        }    
-        
-        return 0;
+        // Remove trailing slash from scan.
+        if (inverted) {
+            totalLength -= 1;
+        }
 
+        // Apply unit.
+        if (units.length > 0
+            && tokens.length >= 1) {
+            // Pad with number if needed, e.g. after an operator where
+            // a number might have been expected.
+            if (padWithValue) {
+                tokens.push({
+                    typ: VOTYP.VAL,
+                    value: 1.0,
+                    unit: new Unit(),
+                    pos: pos
+                });
+            }
 
-        // int   iThisScan;                         // advance this scan location
-        // char *pszSt;                             // offset into character arrays
-        // int   iTokLen;                           // token length
-        // int   iPrfx;                             // prefix index
-        // int   iUnit;                             // loop counter
-        // int   iThisOp;                           // unit multiplier
-        // VALOP voThisValop;                       // value/operator to push onto stack
-    
-        // iThisScan =  0;                          // found no unit yet
-        // iPrfx     = -1;                          // no prefix yet
-    
-        // //---Get token length------------------------
-        // for(iTokLen=1; (iThisPt+iTokLen<(int)strlen(_szEqtn)) && strchr(EQ_VALIDUNIT, _szEqtn[iThisPt+iTokLen]); iTokLen++);
-        // if(iTokLen<=0) return(0);                // ignore bad token
-    
-        // //---Scan for Unit---------------------------
-        // do {                                     // search twice: once with and then without prefix
-        // pszSt = (char*) CEquationSIUnitStr;      // start at beginning of string
-        // for(iUnit = 0; iUnit < EQSI_NUMUNIT_INPUT; iUnit++) {
-        //     if( strncmp(_szEqtn+iThisPt, pszSt, MAX((int)strlen(pszSt), iTokLen)) == 0 ) {
-        //         //---hanging---
-        //         if(uLookFor == LOOKFOR_NUMBER) {
-        //             iThisOp = isOps.Peek(); while(iThisOp > OP_BRACKETOFFSET) iThisOp -= OP_BRACKETOFFSET;
-        //             switch(iThisOp) {
-        //             case OP_DIV:                 // hanging / --> add "1"
-        //             voThisValop.uTyp = VOTYP_PREFIX; // scale factor
-        //             voThisValop.dVal = 1.00;
-        //             voThisValop.iPos = iThisPt;
-        //             vosParsEqn.Push(voThisValop); // push scale factor
-        //             iBrktOff += OP_BRACKETOFFSET; // higher precedence
-        //             break;
-        //             case OP_MUL:                 // after "*" not needed
-        //             isOps.Pop();              // remove the multiplication
-        //             isPos.Pop();
-        //             break;
-        //             default:                     // everything else is an error
-        //             iError = EQERR_PARSE_NUMBEREXPECTED;
-        //             return(0);
-        //             }
-        //         } else {
-        //             iThisOp = iBrktOff + OP_BRACKETOFFSET; // do everthing higher than me
-        //             _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
-        //         }
-    
-        //         //---prefix---
-        //         if(iPrfx>=0) {
-        //             if(iError != EQERR_NONE) return(0);
-        //             voThisValop.uTyp = VOTYP_PREFIX; // scale factor
-        //             voThisValop.dVal = CEquationSIUnitPrefix[iPrfx];
-        //             voThisValop.iPos = iThisPt;
-        //             vosParsEqn.Push(voThisValop); // push scale factor
-        //             isOps.Push(OP_MUL + iBrktOff);
-        //             isPos.Push(iThisPt);
-        //         }
-    
-        //         //---unit---
-        //         iThisOp = isOps.Peek(); while(iThisOp>OP_BRACKETOFFSET) iThisOp-=OP_BRACKETOFFSET;
-        //         iThisOp = OP_MUL + iBrktOff + (iThisOp==OP_DIV)*OP_BRACKETOFFSET;
-        //         voThisValop.uTyp  = VOTYP_UNIT;
-        //         voThisValop.iUnit = iUnit;
-        //         voThisValop.iPos  = iThisPt;       // store const's position
-        //         vosParsEqn.Push(voThisValop);      // save this const*/
-        //         _ProcessOps(&vosParsEqn, &isOps, &isPos, iThisOp, iBrktOff);
-        //         iThisScan = strlen(pszSt) + ((iPrfx>=0) ? 1 : 0); // length of this scan
-        //         iPrfx = -9999;                     // stop searching prefixes
-        //         break;                             // stop looking
-        //     }
-        //     pszSt += strlen(pszSt) + 1;           // advance to next part in string
-        // }
-        // if(iPrfx <= -9999) break;
-    
-        // //---Scan for prefix-------------------------
-        // for(iPrfx=0; iPrfx<EQSI_NUMUNIT_PREFIX; iPrfx++)
-        //     if(CEquationSIUnitPrefixStr[iPrfx] == _szEqtn[iThisPt]) break;
-        // if(iPrfx >= EQSI_NUMUNIT_PREFIX) break; // skip if not found
-        // iThisPt++;                            // start back up one
-        // iTokLen--;                            // string is one char longer
-        // } while(1);
-        return(iThisScan);
+            const prevToken = tokens[tokens.length - 1];
+            if (prevToken.typ === VOTYP.VAL) {
+                const totalUnit = units.reduce((prev, curr) => prev.mult(curr), new Unit());
+                prevToken.unit = prevToken.unit.mult(totalUnit);
+            }
+        }
+        return totalLength;
     }
  
 
@@ -212,7 +170,7 @@
                     }
 
                     //---Unit---
-                    parseLength = parseEquationUnits(subeq, pos, tokens, true);
+                    parseLength = parseEquationUnits(equation, pos, tokens, true);
                     if (parseLength > 0) {
                         lookFor = LOOKFOR.BINARYOP;
                         break;
@@ -310,7 +268,7 @@
                     }
 
                     //---Units---
-                    parseLength = parseEquationUnits(subeq, pos, tokens);
+                    parseLength = parseEquationUnits(equation, pos, tokens);
                     if (parseLength > 0) {
                         break;
                     }
