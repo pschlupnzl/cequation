@@ -11,7 +11,7 @@
         this.coeffs = [0, 0, 0, 0, 0, 0, 0];
         this.scale = 1.0;
         this.offset = 0.0;
-        this.prefix = ""; // Used for formatting only.
+        this.displayString = ""; // Used for formatting only.
         if (units) {
             this.set(units, scale, offset);
         }
@@ -63,7 +63,7 @@
      */
     Unit.prototype.toString = function (sep) {
         return (this.scale === 1 ? "" : this.scale)
-            + this.prefix
+            + this.displayString
             + Unit.symbols.map((symbol, index) => {
             const coeff = this.coeffs[index];
             return !coeff ? "" :
@@ -102,29 +102,57 @@
      * @param {object} tok Object with "value" and "unit" members.
      */
     Unit.simplify = function (token) {
-        const SIPrefix = CEquation.SIPrefix;
+        const Unit = CEquation.Unit;
+        // const SIPrefix = CEquation.SIPrefix;
         const unit = token.unit;
-        let value = token.value * token.unit.scale;
-        let prefix = "";
+        // let value = token.value * token.unit.scale;
+        // let prefix = "";
+
+        /** Count the number of coefficients in the unit. */
+        const countCoeffs = function (unit) {
+            return unit.coeffs.reduce((prev, curr) => prev + Math.abs(curr), 0);
+        }
+
+        // Find the best matching unit, here meaning the one that has
+        // the least number of components.
+        let best = {
+            simplified: unit,
+            uncanceled: countCoeffs(unit)
+        };
+        CEquation.SIDisplayUnits.forEach(function (unitName) {
+            const simplified = unit.divide(Unit.fromSIUnit(unitName));
+            const uncanceled = countCoeffs(simplified);
+            if (uncanceled < best.uncanceled) {
+                simplified.displayString = unitName;
+                best = {
+                    simplified: simplified,
+                    uncanceled: uncanceled
+                };
+            }
+        });
+
+        if (best) {
+            token.unit = best.simplified;
+        }
         
-        // // If only single positive powers (e.g. kgAs), simplify with prefix.
-        // const hasPowers = unit.coeffs.some(coeff => !!coeff);
-        // const singlePowers = unit.coeffs.every(coeff => coeff === 1 || coeff === 0);
-        // if (value && hasPowers && singlePowers) {
-        //     // const sign = value < 0 ? -1 : +1;
-        //     const mag = Math.floor(Math.log10(Math.abs(value))); // Order of magnitude.
-        //     let pow = 3 * Math.floor((mag) / 3); // Power to round to.
-        //     pow = pow > CEquation.SIPrefixMax ? CEquation.SIPrefixMax :
-        //         pow < CEquation.SIPrefixMin ? CEquation.SIPrefixMin : pow;
-        //     if (pow) {
-        //         prefix = Object.keys(SIPrefix).find(key => Math.floor(Math.log10(SIPrefix[key])) === pow);
-        //         value /= Math.pow(10, pow);
-        //     }
-        // }
+        // // // If only single positive powers (e.g. kgAs), simplify with prefix.
+        // // const hasPowers = unit.coeffs.some(coeff => !!coeff);
+        // // const singlePowers = unit.coeffs.every(coeff => coeff === 1 || coeff === 0);
+        // // if (value && hasPowers && singlePowers) {
+        // //     // const sign = value < 0 ? -1 : +1;
+        // //     const mag = Math.floor(Math.log10(Math.abs(value))); // Order of magnitude.
+        // //     let pow = 3 * Math.floor((mag) / 3); // Power to round to.
+        // //     pow = pow > CEquation.SIPrefixMax ? CEquation.SIPrefixMax :
+        // //         pow < CEquation.SIPrefixMin ? CEquation.SIPrefixMin : pow;
+        // //     if (pow) {
+        // //         prefix = Object.keys(SIPrefix).find(key => Math.floor(Math.log10(SIPrefix[key])) === pow);
+        // //         value /= Math.pow(10, pow);
+        // //     }
+        // // }
         
-        token.value = value;
-        token.unit.scale = 1.0;
-        token.unit.prefix = prefix;
+        // token.value = value;
+        // token.unit.scale = 1.0;
+        // token.unit.prefix = prefix;
     };
 
     /**
@@ -204,6 +232,16 @@
         this.scale = 1 / this.scale;
         this.offset = -this.offset;
         return this;
+    };
+
+    /**
+     * Divide this unit by the given unit.
+     * @this {object:Unit} Unit to be divided.
+     * @param {object:Unit} unit Unit to divide by.
+     * @returns {object:Unit} Unit representing the ratio between the two.
+     */
+    Unit.prototype.divide = function (unit) {
+        return this.mult(unit.invert());
     };
 
     /**

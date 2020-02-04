@@ -181,6 +181,7 @@
     CEquation.SIUnitsRe = /^(|mol|cd|kg|m|a|s|K)/;
     CEquation.SIDerivedUnitsRe = /^(ohm|Pa|Hz|W|J|N|C|V|F)/;
     CEquation.SIInputUnitsRe = /^(degC|degF|mol|nmi|ohm|Hz|Pa|cd|eV|ft|in|kg|mi|yd|A|C|F|J|K|L|N|V|W|g|m|s)/;
+    CEquation.SIDisplayUnits = ["kg", "m", "A", "s", "K", "mol", "cd", "ohm", "Pa", "Hz", "W", "J", "N", "C", "V", "F"];
 
     //---Prefixes---
     CEquation.SIPrefix = {
