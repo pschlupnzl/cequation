@@ -27,6 +27,20 @@
     Unit.dimensionless = new Unit();
 
     /**
+     * Returns a new unit based on the SI units and prefixes.
+     * @param {string} unitName Symbol of unit to create.
+     * @param {string=} prefixName Optional prefix to use.
+     * @returns {object:Unit} Created unit.
+     */
+    Unit.fromSIUnit = function (unitName, prefixName) {
+        let unit = new Unit(CEquation.SIUnits[unitName]);
+        if (prefixName) {
+            unit = unit.scalar(CEquation.SIPrefix[prefixName]);
+        }
+        return unit;
+    };
+
+    /**
      * Sets the coefficients of this unit.
      * @this {object:Unit} Unit whose coefficients to set.
      * @param {Array} units Array of coefficients.
@@ -121,6 +135,18 @@
      */
     Unit.prototype.same = function (unit) {
         return !this.coeffs.some((coeff, index) => coeff !== unit.coeffs[index]);
+    };
+
+    /**
+     * Returns a value indicating whether two units are equivalent.
+     * @this {object:Unit} Unit to compare against.
+     * @param {object:Unit} unit Unit to compare.
+     * @returns {boolean} Value indicating whether the units are equivalent.
+     */
+    Unit.prototype.equals = function (unit) {
+        return this.same(unit)
+            && this.scale === unit.scale
+            && this.offset === unit.offset;
     };
 
     /**
