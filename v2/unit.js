@@ -108,40 +108,64 @@
         // let value = token.value * token.unit.scale;
         // let prefix = "";
 
-        /** Count the number of coefficients in the unit. */
-        const countCoeffs = function (unit) {
-            return unit.coeffs.reduce((prev, curr) => prev + Math.abs(curr), 0);
-        }
+        if (!unit.isDimensionless()) {
 
-        // Find the best matching unit, here meaning the one that has
-        // the least number of components.
-        let best = {
-            simplified: unit,
-            uncanceled: countCoeffs(unit)
-        };
-        CEquation.SIDisplayUnits.forEach(function (unitName) {
-            const simplified = unit.divide(Unit.fromSIUnit(unitName));
-            const uncanceled = countCoeffs(simplified);
-            if (uncanceled < best.uncanceled) {
-                simplified.displayString = unitName;
-                best = {
-                    simplified: simplified,
-                    uncanceled: uncanceled
-                };
+            // /** Count the number of coefficients in the unit. */
+            // const countCoeffs = function (unit) {
+            //     return unit.coeffs.reduce((prev, curr) => prev + Math.abs(curr), 0);
+            // }
+
+            // Find the best matching unit, here meaning the one that has
+            // the least number of components.
+            // let best = {
+            //     simplified: unit,
+            //     uncanceled: countCoeffs(unit)
+            // };
+            // CEquation.SIDisplayUnits.forEach(function (unitName) {
+            //     const simplified = unit.divide(Unit.fromSIUnit(unitName));
+            //     const uncanceled = countCoeffs(simplified);
+            //     if (uncanceled < best.uncanceled) {
+            //         simplified.displayString = unitName;
+            //         best = {
+            //             simplified: simplified,
+            //             uncanceled: uncanceled
+            //         };
+            //     }
+            // });
+
+
+            
+            let best = null;
+            const unitMag = Math.sqrt(unit.coeffs.reduce((prev, curr) => prev + curr * curr, 0));
+            CEquation.SIDisplayUnits.forEach(function (unitName) {
+                const siUnit = Unit.fromSIUnit(unitName);
+                const siMag = Math.sqrt(siUnit.coeffs.reduce((prev, curr) => prev + curr * curr, 0));
+                const cos = siUnit.coeffs.reduce((prev, curr, index) => prev + curr * unit.coeffs[index], 0)
+                    / (unitMag * siMag);
+                const pow = Math.round(unitMag / siMag);
+                if (!best
+                    || Math.abs(cos) > Math.abs(best.cos)
+                    || (cos === 1 && best.cos === -1)) {
+                    best = {
+                        unitName: unitName,
+                        unit: siUnit,
+                        pow: pow,
+                        cos: cos
+                    };
+                }
+            });
+
+            console.log(best)
+            if (best && best.pow) {
+                if (best.cos === -1) {
+                    // Single negative power: Use inverted unit.
+                    best.cos = -best.cos;
+                    best.pow = -best.pow;
+                }
+                token.unit = token.unit.divide(best.unit.power(best.pow));
+                token.unit.displayString = best.unitName + (best.pow === 1 ? "" : "^" + best.pow);
             }
-        });
-
-        if (best) {
-            token.unit = best.simplified;
         }
-        const unitMag = unit.coeffs.reduce((prev, curr) => prev + curr * curr, 0);
-        CEquation.SIDisplayUnits.forEach(function (unitName) {
-            const siUnit = Unit.fromSIUnit(unitName);
-            const siMag = siUnit.coeffs.reduce((prev, curr) => prev + curr * curr, 0);
-            const cos = siUnit.coeffs.reduce((prev, curr, index) => prev + curr * unit.coeffs[index], 0)
-                // / (unitMag * siMag);
-            console.log(JSON.stringify(unit.coeffs), unitMag, unitName, JSON.stringify(siUnit.coeffs), siMag, cos);
-        })
 
         // // // If only single positive powers (e.g. kgAs), simplify with prefix.
         // // const hasPowers = unit.coeffs.some(coeff => !!coeff);
