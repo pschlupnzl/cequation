@@ -134,7 +134,15 @@
         if (best) {
             token.unit = best.simplified;
         }
-        
+        const unitMag = unit.coeffs.reduce((prev, curr) => prev + curr * curr, 0);
+        CEquation.SIDisplayUnits.forEach(function (unitName) {
+            const siUnit = Unit.fromSIUnit(unitName);
+            const siMag = siUnit.coeffs.reduce((prev, curr) => prev + curr * curr, 0);
+            const cos = siUnit.coeffs.reduce((prev, curr, index) => prev + curr * unit.coeffs[index], 0)
+                // / (unitMag * siMag);
+            console.log(JSON.stringify(unit.coeffs), unitMag, unitName, JSON.stringify(siUnit.coeffs), siMag, cos);
+        })
+
         // // // If only single positive powers (e.g. kgAs), simplify with prefix.
         // // const hasPowers = unit.coeffs.some(coeff => !!coeff);
         // // const singlePowers = unit.coeffs.every(coeff => coeff === 1 || coeff === 0);
