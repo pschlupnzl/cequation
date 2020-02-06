@@ -27,8 +27,8 @@
         let units = [];
 
         /** Apply a newly matched unit to the unit total. */
-        const pushUnit = function (inverted, unitName, prefixName) {
-            let unit = new Unit(CEquation.SIUnits[unitName]);
+        const pushUnit = function (inverted, symbol, prefixName) {
+            let unit = Unit.fromSIUnit(symbol);
             if (prefixName) {
                 unit = unit.scalar(CEquation.SIPrefix[prefixName]);
             }
@@ -36,7 +36,7 @@
                 unit = unit.invert();
             }
             units.push(unit);
-            return unitName.length + (prefixName ? prefixName.length : 0);
+            return symbol.length + (prefixName ? prefixName.length : 0);
         };
 
         // Scan whole unit including powers and slashes e.g. kgm^s/s^3.
@@ -49,7 +49,7 @@
             const subeq = equation.substr(pos);
             let matchExponent
             let matchPrefix;
-            let matchUnit;
+            let matchSymbol;
             
             if (units.length > 0 && subeq[0] === "/") {
                 // Prepare for next unit to be inverted.
@@ -61,13 +61,13 @@
                 units[units.length - 1] = units[units.length - 1].power(+exponent);
                 parseLength = exponent.length + 1;
             } else if ((matchPrefix = CEquation.SIPrefixRe.exec(subeq)) !== null
-                && (matchUnit = CEquation.SIInputUnitsRe.exec(subeq.substr(1))) !== null) {
+                && (matchSymbol = CEquation.SIInputUnitsRe.exec(subeq.substr(1))) !== null) {
                 // Match prefix and unit.
-                parseLength = pushUnit(inverted, matchUnit[1], matchPrefix[1]);
+                parseLength = pushUnit(inverted, matchSymbol[1], matchPrefix[1]);
                 inverted = false;
-            } else if ((matchUnit = CEquation.SIInputUnitsRe.exec(subeq)) !== null) {
+            } else if ((matchSymbol = CEquation.SIInputUnitsRe.exec(subeq)) !== null) {
                 // Matching unit alone.
-                parseLength = pushUnit(inverted, matchUnit[1]);
+                parseLength = pushUnit(inverted, matchSymbol[1]);
                 inverted = false;
             }
 
@@ -161,7 +161,7 @@
                         tokens.push({
                             typ: VOTYP.VAL,
                             value: c.value,
-                            unit: new Unit(c.units),
+                            unit: new Unit("", c.units),
                             pos: pos
                         });
                         parseLength = name.length;

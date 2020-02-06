@@ -3,17 +3,18 @@
 
     /**
      * Class to handle processing of units.
+     * @param {string} symbol Symbol of unit.
      * @param {Array} units Optional units to set when creating this object.
      * @param {number=} scale Optional scale, if not included in units array.
      * @param {number=} offset Optional offset, if not included in units array.
      */
-    const Unit = function (units, scale, offset) {
+    const Unit = function (symbol, units, scale, offset) {
+        this.symbol = symbol || "";
         this.coeffs = [0, 0, 0, 0, 0, 0, 0];
         this.scale = 1.0;
         this.offset = 0.0;
-        this.displayString = ""; // Used for formatting only.
         if (units) {
-            this.set(units, scale, offset);
+            this.set(symbol, units, scale, offset);
         }
         return this;
     };
@@ -28,12 +29,12 @@
 
     /**
      * Returns a new unit based on the SI units and prefixes.
-     * @param {string} unitName Symbol of unit to create.
+     * @param {string} symbol Symbol of unit to create.
      * @param {string=} prefixName Optional prefix to use.
      * @returns {object:Unit} Created unit.
      */
-    Unit.fromSIUnit = function (unitName, prefixName) {
-        let unit = new Unit(CEquation.SIUnits[unitName]);
+    Unit.fromSIUnit = function (symbol, prefixName) {
+        let unit = new Unit(symbol, CEquation.SIUnits[symbol]);
         if (prefixName) {
             unit = unit.scalar(CEquation.SIPrefix[prefixName]);
         }
@@ -43,12 +44,14 @@
     /**
      * Sets the coefficients of this unit.
      * @this {object:Unit} Unit whose coefficients to set.
+     * @param {string} symbol Symbol of unit.
      * @param {Array} units Array of coefficients.
      * @param {number=} scale Optional scale, if not included in units array.
      * @param {number=} offset Optional offset, if not included in units array.
      * @returns {object:Unit} This unit object for chaining.
      */
-    Unit.prototype.set = function (units, scale, offset) {
+    Unit.prototype.set = function (symbol, units, scale, offset) {
+        this.symbol = symbol;
         this.coeffs.forEach((coeff, index, coeffs) => coeffs[index] = units[index]);
         this.scale = (scale !== undefined ? scale : units[7]) || 1.0;
         this.offset = (offset !== undefined ? offset : units[8]) || 0.0;
@@ -63,7 +66,7 @@
      */
     Unit.prototype.toString = function (sep) {
         return (this.scale === 1 ? "" : this.scale)
-            + this.displayString
+            + this.symbol
             + Unit.symbols.map((symbol, index) => {
             const coeff = this.coeffs[index];
             return !coeff ? "" :
@@ -87,11 +90,11 @@
         return [
             "<span style='display: inline-block; vertical-align: middle; text-align: center'>",
             "<span style='display: block'>",
-            hasNom ? new Unit(nom).toString(" ") : hasDenom ? "1" : "",
+            hasNom ? new Unit("", nom).toString(" ") : hasDenom ? "1" : "",
             "</span>",
             hasDenom ? "<span style='display: block; border-bottom: 0.08em solid'></span>" : "",
             "<span style='display: block'>",
-            hasDenom ? new Unit(denom).toString(" ") : "",
+            hasDenom ? new Unit("", denom).toString(" ") : "",
             "</span>",
             "</span>"
         ].join("");
@@ -137,8 +140,8 @@
             
             let best = null;
             const unitMag = Math.sqrt(unit.coeffs.reduce((prev, curr) => prev + curr * curr, 0));
-            CEquation.SIDisplayUnits.forEach(function (unitName) {
-                const siUnit = Unit.fromSIUnit(unitName);
+            CEquation.SIDisplayUnits.forEach(function (symbol) {
+                const siUnit = Unit.fromSIUnit(symbol);
                 const siMag = Math.sqrt(siUnit.coeffs.reduce((prev, curr) => prev + curr * curr, 0));
                 const cos = siUnit.coeffs.reduce((prev, curr, index) => prev + curr * unit.coeffs[index], 0)
                     / (unitMag * siMag);
@@ -147,7 +150,7 @@
                     || Math.abs(cos) > Math.abs(best.cos)
                     || (cos === 1 && best.cos === -1)) {
                     best = {
-                        unitName: unitName,
+                        symbol: symbol,
                         unit: siUnit,
                         pow: pow,
                         cos: cos
@@ -163,7 +166,7 @@
                     best.pow = -best.pow;
                 }
                 token.unit = token.unit.divide(best.unit.power(best.pow));
-                token.unit.displayString = best.unitName + (best.pow === 1 ? "" : "^" + best.pow);
+                token.unit.symbol = best.symbol + (best.pow === 1 ? "" : "^" + best.pow);
             }
         }
 
@@ -226,6 +229,7 @@
      */
     Unit.prototype.mult = function (unit) {
         return new Unit(
+            this.symbol + unit.symbol,
             this.coeffs.map((coeff, index) => coeff + unit.coeffs[index]),
             this.scale * unit.scale,
             this.offset + unit.offset);
@@ -238,7 +242,7 @@
      * @returns {object:Unit} New unit object.
      */
     Unit.prototype.scalar = function (scalar) {
-        return new Unit(this.coeffs, this.scale * scalar, this.offset);
+        return new Unit(this.symbol, this.coeffs, this.scale * scalar, this.offset);
     };
 
     /**
@@ -249,6 +253,7 @@
      */
     Unit.prototype.power = function (scalar) {
         return new Unit(
+            this.symbol,
             this.coeffs.map(coeff => coeff * scalar),
             Math.pow(this.scale, scalar),
             this.offset);
