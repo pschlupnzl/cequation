@@ -42,18 +42,18 @@
                     txtAns.innerHTML = new Array(errPos).join("&nbsp;") + " ^ " + err;
                     txtAnsUnit.innerText = "";
                 } else {
-                    CEquation.Unit.simplify(ans);
+                    // CEquation.Unit.simplify(ans);
                     txtAns.innerText = ans.value;
                     txtAnsUnit.innerText = ans.unit.toString();
                 }
             }
 
-            const tests = CEquation.runTests();
-            const butTests = document.getElementById("butTests");
-            butTests.innerText = `Tests: ${tests.passed} passed, ${tests.failed} failed, ${tests.total} total`;
-            butTests.addEventListener("click", function () {
-                CEquation.runTests();
-            });
+            // const tests = CEquation.runTests();
+            // const butTests = document.getElementById("butTests");
+            // butTests.innerText = `Tests: ${tests.passed} passed, ${tests.failed} failed, ${tests.total} total`;
+            // butTests.addEventListener("click", function () {
+            //     CEquation.runTests();
+            // });
 
             txtEqn.addEventListener("keyup", update);
             update();

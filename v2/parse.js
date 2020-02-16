@@ -27,16 +27,10 @@
         let units = [];
 
         /** Apply a newly matched unit to the unit total. */
-        const pushUnit = function (inverted, symbol, prefixName) {
-            let unit = Unit.fromSIUnit(symbol);
-            if (prefixName) {
-                unit = unit.scalar(CEquation.SIPrefix[prefixName]);
-            }
-            if (inverted) {
-                unit = unit.invert();
-            }
+        const pushUnit = function (inverted, symbol, prefix) {
+            let unit = new Unit(symbol, prefix, inverted ? -1 : 1);
             units.push(unit);
-            return symbol.length + (prefixName ? prefixName.length : 0);
+            return symbol.length + (prefix ? prefix.length : 0);
         };
 
         // Scan whole unit including powers and slashes e.g. kgm^s/s^3.

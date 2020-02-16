@@ -115,22 +115,22 @@
         { eq: "kB", ans: { value: CEquation.SIConst.kB.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.kB.value, pos: 0 }] },
         { eq: "R", ans: { value: CEquation.SIConst.R.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.R.value, pos: 0 }] },
 
-        // Units.
-        //          kg      m      A      s      K     mol    cd    scale offset
-        { eq: "3m", ans: { value: 3, unit: Unit.fromSIUnit("m")} },
-        { eq: "3/s", ans: { value: 3, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0])} },
-        { eq: "3m/s", ans: { value: 3, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        { eq: "4m/2s", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        { eq: "4m/2", ans: { value: 2, unit: new Unit("", [0, 1, 0, 0, 0, 0, 0])} },
-        { eq: "4ms", ans: { value: 4, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0], 1e-3)} },
-        { eq: "4g", ans: { value: 4, unit: new Unit("", [1, 0, 0, 0, 0, 0, 0], 1e-3)} },
-        { eq: "4km^2", ans: { value: 4, unit: new Unit("", [0, 2, 0, 0, 0, 0, 0], 1e6)} },
-        { eq: "2ms^-1", ans: { value: 2, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0], 1e3)} },
-        { eq: "2m s^-1", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        { eq: "2kgs^-1", ans: { value: 2, unit: new Unit("", [1, 0, 0, -1, 0, 0, 0])} },
-        { eq: "2J/W", ans: { value: 2, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0])} },
-        { eq: "(3ohm * 2A)/1V", ans: { value: 6, unit: new Unit("", )} },
-        { eq: "3 mCkgs", ans: { value: 3, unit: new Unit("", [1, 0, 1, 2, 0, 0, 0], 1e-3)} },
+        // // Units.
+        // //          kg      m      A      s      K     mol    cd    scale offset
+        // { eq: "3m", ans: { value: 3, unit: Unit.fromSIUnit("m")} },
+        // { eq: "3/s", ans: { value: 3, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0])} },
+        // { eq: "3m/s", ans: { value: 3, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
+        // { eq: "4m/2s", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
+        // { eq: "4m/2", ans: { value: 2, unit: new Unit("", [0, 1, 0, 0, 0, 0, 0])} },
+        // { eq: "4ms", ans: { value: 4, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0], 1e-3)} },
+        // { eq: "4g", ans: { value: 4, unit: new Unit("", [1, 0, 0, 0, 0, 0, 0], 1e-3)} },
+        // { eq: "4km^2", ans: { value: 4, unit: new Unit("", [0, 2, 0, 0, 0, 0, 0], 1e6)} },
+        // { eq: "2ms^-1", ans: { value: 2, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0], 1e3)} },
+        // { eq: "2m s^-1", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
+        // { eq: "2kgs^-1", ans: { value: 2, unit: new Unit("", [1, 0, 0, -1, 0, 0, 0])} },
+        // { eq: "2J/W", ans: { value: 2, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0])} },
+        // { eq: "(3ohm * 2A)/1V", ans: { value: 6, unit: new Unit("", )} },
+        // { eq: "3 mCkgs", ans: { value: 3, unit: new Unit("", [1, 0, 1, 2, 0, 0, 0], 1e-3)} },
 
     ];
 
