@@ -44,6 +44,8 @@
             let matchExponent
             let matchPrefix;
             let matchSymbol;
+            let symbol;
+            let prefix = "";
             
             if (units.length > 0 && subeq[0] === "/") {
                 // Prepare for next unit to be inverted.
@@ -56,12 +58,18 @@
                 parseLength = exponent.length + 1;
             } else if ((matchPrefix = CEquation.SIPrefixRe.exec(subeq)) !== null
                 && (matchSymbol = CEquation.SIInputUnitsRe.exec(subeq.substr(1))) !== null) {
-                // Match prefix and unit.
-                parseLength = pushUnit(inverted, matchSymbol[1], matchPrefix[1]);
-                inverted = false;
+                // Match prefix and unit: Handled below.
+                prefix = matchPrefix[1];
+                symbol = matchSymbol[1];
             } else if ((matchSymbol = CEquation.SIInputUnitsRe.exec(subeq)) !== null) {
-                // Matching unit alone.
-                parseLength = pushUnit(inverted, matchSymbol[1]);
+                // Matching unit alone: Handled below.
+                symbol = matchSymbol[1];
+            }
+
+            if (symbol) {
+                // Handle unit, optionally with prefix.
+                units.push(new Unit(symbol, prefix, inverted ? -1 : 1));
+                parseLength = symbol.length + prefix.length;
                 inverted = false;
             }
 

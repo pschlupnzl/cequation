@@ -39,6 +39,22 @@
 
     // Unit.dimensionless = new Unit();
 
+    /**
+     * Adds the values of the two tokens, including their units,
+     * returning a new token. The units are assumed to be compatible.
+     * @param {object} tok1 First token to be added.
+     * @param {object} tok2 Second token to be added.
+     * @param {boolean=} inverse Value specifying whether the values
+     *    should be subtracted, rather than added.
+     */
+    Unit.addValues = function (tok1, tok2, inverse) {
+        const scale = tok2.unit.toSIArray()[7] / tok1.unit.toSIArray()[7];
+        return {
+            value: tok1.value + (inverse ? -1 : 1) * tok2.value * scale,
+            unit: tok1.unit
+        };
+    }
+
     // /**
     //  * Returns a new unit based on the SI units and prefixes.
     //  * @param {string} symbol Symbol of unit to create.
@@ -202,13 +218,34 @@
      * @returns {boolean} Value indicating whether the units match.
      */
     Unit.prototype.same = function (unit) {
-        console.log("same?", this, unit);
-        // // Quick check.
-        // if (this.units.length === unit.units.length
-        //     && !this.units.some((unit, index) => )
-        
-        // return !this.coeffs.some((coeff, index) => coeff !== unit.coeffs[index]);
-        return true;
+        // Quick check.
+        if (this.length === unit.length
+            && this.every((u, index) =>
+                u.symbol === unit[index].symbol 
+                && u.prefix === unit[index].prefix
+                && u.power === unit[index].power)) {
+            return true;
+        }
+
+        // Compare base unit powers.
+        const unitSI = unit.toSIArray();
+        return this.toSIArray().every((p, index) => p === unitSI[index] || index >= 7);
+    };
+
+    /**
+     * Returns an array of SI
+     * @this {object:Unit} Unit whose components to convert.
+     * @returns {Array<number>} Array of powers for each SI unit.
+     */
+    Unit.prototype.toSIArray = function () {
+        const siArray = this.reduce((prev, u) => {
+            const ff = CEquation.SIUnits[u.symbol];
+            return prev.map((p, index) =>
+                    index === 7 ? p * Math.pow(ff[index], u.power) * (CEquation.SIPrefix[u.prefix] || 1) :
+                    p + (ff[index] * u.power)
+                );
+            }, CEquation.SIUnits.dimensionless);
+        return siArray;
     };
 
     // /**

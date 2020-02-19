@@ -52,8 +52,8 @@
         switch (token.op) {
             // case OP.PSH: valss.push(arg1); vals = arg2; break; // restore both to stack
             // case OP.POP: vals = arg2; break; // ignore first argument
-            case OP.ADD: vals = { value: arg1.value + arg2.value * arg2.unit.scale, unit: arg1.unit }; break;
-            case OP.SUB: vals = { value: arg1.value - arg2.value * arg2.unit.scale, unit: arg1.unit }; break;
+            case OP.ADD: vals = Unit.addValues(arg1, arg2); break;
+            case OP.SUB: vals = Unit.addValues(arg1, arg2, true); break;
             case OP.MUL: vals = { value: arg1.value * arg2.value, unit: arg1.unit.mult(arg2.unit) }; break;
             case OP.DIV: vals = { value: arg1.value / arg2.value, unit: arg1.unit.div(arg2.unit) }; break;
             case OP.POW: vals = { value: arg1.value === 0 && arg2.value === 0 ? 1 : Math.pow(arg1.value, arg2.value), unit: arg1.unit.power(arg2.value) }; break;
