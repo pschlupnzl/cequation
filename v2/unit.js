@@ -16,15 +16,6 @@
                 power: power === undefined ? 1 : power
             });
         }
-        // const Unit = function (symbol, units, scale, offset) {
-        // this.symbol = symbol || "";
-        // this.coeffs = [0, 0, 0, 0, 0, 0, 0];
-        // this.scale = 1.0;
-        // this.offset = 0.0;
-        // if (units) {
-        //     this.set(symbol, units, scale, offset);
-        // }
-        // return this;
     };
 
     const UnitPrototype = function () {};
@@ -43,17 +34,36 @@
      * Adds the values of the two tokens, including their units,
      * returning a new token. The units are assumed to be compatible.
      * @param {object} tok1 First token to be added.
-     * @param {object} tok2 Second token to be added.
-     * @param {boolean=} inverse Value specifying whether the values
+     * @param {object} tok2 Second token to be added, or subtracted.
+     * @param {boolean=} inverse Value indicating whether the values
      *    should be subtracted, rather than added.
      */
     Unit.addValues = function (tok1, tok2, inverse) {
-        const scale = tok2.unit.toSIArray()[7] / tok1.unit.toSIArray()[7];
+        const scale = tok2.unit.prefixScale() / tok1.unit.prefixScale();
         return {
             value: tok1.value + (inverse ? -1 : 1) * tok2.value * scale,
             unit: tok1.unit
         };
-    }
+    };
+
+    /**
+     * Multiplies the values of the two tokens, including their units,
+     * returning a new token.
+     * @param {object} tok1 First token to be multiplied.
+     * @param {object} tok2 Second token to be multiplied, or divided.
+     * @param {boolean=} inverse Value indicating whether the values
+     *    should be divided, rather than multiplied.
+     */
+    Unit.multiplyValues = function (tok1, tok2, inverse) {
+        const unit = inverse 
+            ? tok1.unit.div(tok2.unit)
+            : tok1.unit.mult(tok2.unit);
+        const scale = unit.aggregate();
+        return {
+            value: scale * tok1.value * (inverse ? 1 / tok2.value : tok2.value),
+            unit: unit
+        };
+    };
 
     // /**
     //  * Returns a new unit based on the SI units and prefixes.
@@ -95,7 +105,7 @@
     Unit.prototype.toString = function (sep) {
         return "[" + this.map(u =>
             `${u.prefix}${u.symbol}${u.power === 1 ? "" : u.power < 0 ? Unit.superscripts[0] + Unit.superscripts[-u.power] : Unit.superscripts[u.power]}`
-        ).join(sep || " ") + "]";
+        ).join(sep || " ") + "]" + " (" + this.prefixScale() + ")";
     };
 
     // /**
@@ -229,7 +239,7 @@
 
         // Compare base unit powers.
         const unitSI = unit.toSIArray();
-        return this.toSIArray().every((p, index) => p === unitSI[index] || index >= 7);
+        return this.toSIArray().every((p, index) => p === unitSI[index]);
     };
 
     /**
@@ -240,12 +250,23 @@
     Unit.prototype.toSIArray = function () {
         const siArray = this.reduce((prev, u) => {
             const ff = CEquation.SIUnits[u.symbol];
-            return prev.map((p, index) =>
-                    index === 7 ? p * Math.pow(ff[index], u.power) * (CEquation.SIPrefix[u.prefix] || 1) :
-                    p + (ff[index] * u.power)
-                );
-            }, CEquation.SIUnits.dimensionless);
+            return prev.map((p, index) => p + ff[index] * u.power);
+        }, CEquation.SIUnits.dimensionless.slice(0, 7));
         return siArray;
+    };
+
+    /**
+     * Returns the scale factor of all prefixes in this unit.
+     * @this {object:Unit} Unit whose scale to determine.
+     * @returns {number} Scale factor for all prefixes.
+     */
+    Unit.prototype.prefixScale = function () {
+        const scale = this.reduce((prev, u) => 
+            prev * Math.pow(
+                CEquation.SIUnits[u.symbol][7] * (CEquation.SIPrefix[u.prefix] || 1),
+                u.power)
+            , 1);
+        return scale;
     };
 
     // /**
@@ -268,6 +289,39 @@
     // Unit.prototype.isDimensionless = function () {
     //     return !this.coeffs.some(coeff => !!coeff);
     // };
+
+    /**
+     * Cancel out repeated units, e.g. J m J² m⁻¹ -> J³ in place.
+     * @this {object:Unit} Unit whose components to aggregate.
+     * @returns {object:Unit} Cancelled scale factor.
+     */
+    Unit.prototype.aggregate = function () {
+        const scale = this.prefixScale();
+        const ksymbol = {};
+        this.forEach((u) => ksymbol[u.symbol] = (ksymbol[u.symbol] || 0) + u.power);
+        for (let index = 0; index < this.length; index += 1) {
+            const symbol = this[index].symbol;
+            if (ksymbol[symbol]) {
+                this[index].power = ksymbol[symbol];
+                this[index].prefix = "";
+                delete ksymbol[symbol];
+            } else {
+                this.splice(index, 1);
+                index -= 1;
+            }
+        }
+        return scale;
+    };
+
+    // // TODO: Test!    
+    // const u = new Unit("J", "", 1);
+    // // u.push({ symbol: "J", prefix: "", power: 1 });
+    // u.push({ symbol: "m", prefix: "", power: 1 });
+    // u.push({ symbol: "J", prefix: "m", power: 2 });
+    // u.push({ symbol: "m", prefix: "", power: -1 });
+    // console.log(u);
+    // u.aggregate();
+    // console.log(u)
 
     /**
      * Multiplies this unit by the supplied units.
