@@ -32,7 +32,7 @@
                 });
                 divStack.innerText = eqn + "\n\n";
                 divStack.innerText += tokens && CEquation.utils.toString(tokens) || "";
-                const ans = tokens && CEquation.evaluate(tokens, function (pos, msg) {
+                let ans = tokens && CEquation.evaluate(tokens, function (pos, msg) {
                     if (!err) {
                         errPos = pos;
                         err = msg;
@@ -42,7 +42,7 @@
                     txtAns.innerHTML = new Array(errPos).join("&nbsp;") + " ^ " + err;
                     txtAnsUnit.innerText = "";
                 } else {
-                    // CEquation.Unit.simplify(ans);
+                    ans = CEquation.Unit.simplify(ans);
                     txtAns.innerText = ans.value;
                     txtAnsUnit.innerText = ans.unit.toString();
                 }
@@ -75,7 +75,8 @@
                 x-value="3 mJ"
                 x-value="2 g"
                 x-value="1m/s + 2m/ms"
-                value="3s * 2us"
+                x-value="3s * 2us"
+                value="3 s^2/J^2"
                 /></td>
         </tr>
         <tr>

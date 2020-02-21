@@ -65,6 +65,48 @@
         };
     };
 
+    /**
+     * Simplify the token and 
+     */
+    Unit.simplify = function (tok) {
+        const SIUnits = CEquation.SIUnits;
+        const unit = tok.unit;
+        if (unit.length > 0) {
+            const unitArray = unit.toSIArray();
+
+            // Strategy
+            // Compare unit to be simplified with each SI display unit
+            // candidate. If all of the powers line up, with the same
+            // ratio, then we can simplify it.
+            // Example: s/mJ
+            //        unit = [{ symbol: "s", power: 1}, { symbol: "J", prefix:"m", power: -1}]
+            //   unitArray = [-1, -2, 0,  3, 0, 0, 0]
+            //   SIUnits.W = [ 1,  2, 0, -3, 0, 0, 0]
+            //       power = -1
+            // prefixScale = 1000
+            //     siScale = 1
+            // Result : 1/W.
+            for (let symbol of CEquation.SIDisplayUnits) {
+                const siArray = SIUnits[symbol];
+                const coeffs = unitArray.map((u, index) =>
+                        u === 0.0 && siArray[index] === 0.0 ? null : // Not power of either.
+                        siArray[index] === 0.0 ? 0 : // Missing on SI candidate.
+                        u / siArray[index] // Ratio of powers.
+                    ).filter(v => v !== null); // Eliminate where not power of either.
+
+                const power = coeffs[0];
+                if (coeffs.every(v => v !== 0)
+                    && coeffs.every(v => v === power)) {
+                        return {
+                            value: tok.value * unit.prefixScale() / Math.pow(siArray[7], power),
+                            unit: new Unit(symbol, "", power)
+                        };
+                    }
+            }
+        }
+        return tok;
+    };
+
     // /**
     //  * Returns a new unit based on the SI units and prefixes.
     //  * @param {string} symbol Symbol of unit to create.
@@ -256,7 +298,8 @@
     };
 
     /**
-     * Returns the scale factor of all prefixes in this unit.
+     * Returns the scale factor of all prefixes in this unit, including
+     * factors from each base unit.
      * @this {object:Unit} Unit whose scale to determine.
      * @returns {number} Scale factor for all prefixes.
      */
