@@ -97,6 +97,18 @@
         return match && match[0];
     };
 
+    /**
+     * Strips unsightly roundoff errors, e.g. 0.100000000003 -> 0.1.
+     * @param {number} number Value to truncate.
+     * @returns {string} Formatted number.
+     */
+    const stripRoundoff = function (number) {
+        // See https://stackoverflow.com/questions/1458633/how-to-deal-with-floating-point-number-precision-in-javascript
+        return parseFloat(number).toPrecision(15)
+            .replace(/(\..*?)0+$/, "$1")
+            .replace(/\.$/, "");
+    }
+
     CEquation.utils = {
         assert: assert,
         assertEqual: assertEqual,
@@ -105,5 +117,6 @@
         evalError: evalError,
         scanNumber: scanNumber,
         skipWhitespace: skipWhitespace,
+        stripRoundoff: stripRoundoff,
     };
 }(CEquation));

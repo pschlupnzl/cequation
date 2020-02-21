@@ -43,7 +43,7 @@
                     txtAnsUnit.innerText = "";
                 } else {
                     ans = CEquation.Unit.simplify(ans);
-                    txtAns.innerText = ans.value;
+                    txtAns.innerText = CEquation.utils.stripRoundoff(ans.value);
                     txtAnsUnit.innerText = ans.unit.toString();
                 }
             }
