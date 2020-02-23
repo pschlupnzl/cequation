@@ -66,6 +66,33 @@
     };
 
     /**
+     * Compare the values, including units. Assumes the units
+     * are compatible.
+     * @param {object} tok1 Token to compare.
+     * @param {object} tok2 Token to compare against.
+     * @param {enum} op Operator.
+     * @returns {object} Dimensionless token with 1 if the comparison is true, otherwise 0.
+     */
+    Unit.comparison = function (tok1, tok2, op) {
+        const OP = CEquation.OP;
+        const val1 = tok1.value * tok1.unit.prefixScale();
+        const val2 = tok2.value * tok2.unit.prefixScale();
+        let val = 0;
+        switch (op) {
+            case OP.LTE: val = val1 <= val2 ? 1 : 0; break;
+            case OP.GTE: val = val1 >= val2 ? 1 : 0; break;
+            case OP.LT : val = val1 <  val2 ? 1 : 0; break;
+            case OP.GT : val = val1 >  val2 ? 1 : 0; break;
+            case OP.NEQ: val = val1 != val2 ? 1 : 0; break;
+            case OP.EQ : val = val1 == val2 ? 1 : 0; break;
+        }
+        return {
+            value: val,
+            unit: new Unit()
+        };
+    };
+
+    /**
      * Simplify the token and 
      */
     Unit.simplify = function (tok) {
@@ -324,14 +351,15 @@
     //         && this.offset === unit.offset;
     // };
 
-    // /**
-    //  * Returns a value indicating whether the unit is dimensionless.
-    //  * @this {object:Unit} Unit to test.
-    //  * @returns {boolean} Value indicating whether the unit is dimensionless.
-    //  */
-    // Unit.prototype.isDimensionless = function () {
-    //     return !this.coeffs.some(coeff => !!coeff);
-    // };
+    /**
+     * Returns a value indicating whether the unit is dimensionless.
+     * @this {object:Unit} Unit to test.
+     * @returns {boolean} Value indicating whether the unit is dimensionless.
+     */
+    Unit.prototype.isDimensionless = function () {
+        return this.length === 0
+            || this.toSIArray().every(v => v === 0);
+    };
 
     /**
      * Cancel out repeated units, e.g. J m J² m⁻¹ -> J³ in place.

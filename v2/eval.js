@@ -45,7 +45,19 @@
                     return evalError(arg2.pos, CEquation.EVAL_ERROR.UNIT_NOT_DIMLESS);
                 }
                 break;
-        }
+            case OP.OR: 
+            case OP.AND:
+            case OP.LTE:
+            case OP.GTE:
+            case OP.LT :
+            case OP.GT :
+            case OP.NEQ:
+            case OP.EQ :
+                if (!arg1.unit.same(arg2.unit)) {
+                    return evalError(arg2.pos, CEquation.EVAL_ERROR.UNIT_MISMATCH); 
+                }
+                break;
+            }
 
         // Perform calculation.
         let vals;
@@ -59,12 +71,14 @@
             case OP.POW: vals = { value: arg1.value === 0 && arg2.value === 0 ? 1 : Math.pow(arg1.value, arg2.value), unit: arg1.unit.power(arg2.value) }; break;
             case OP.OR:  vals = { value: arg1.value !== 0 || arg2.value !== 0 ? 1 : 0, unit: new Unit() }; break;
             case OP.AND: vals = { value: arg1.value !== 0 && arg2.value !== 0 ? 1 : 0, unit: new Unit() }; break;
-            case OP.LTE: vals = { value: arg1.value <= arg2.value ? 1 : 0, unit: new Unit() }; break;
-            case OP.GTE: vals = { value: arg1.value >= arg2.value ? 1 : 0, unit: new Unit() }; break;
-            case OP.LT : vals = { value: arg1.value <  arg2.value ? 1 : 0, unit: new Unit() }; break;
-            case OP.GT : vals = { value: arg1.value >  arg2.value ? 1 : 0, unit: new Unit() }; break;
-            case OP.NEQ: vals = { value: arg1.value != arg2.value ? 1 : 0, unit: new Unit() }; break;
-            case OP.EQ : vals = { value: arg1.value == arg2.value ? 1 : 0, unit: new Unit() }; break;
+            case OP.LTE:
+            case OP.GTE:
+            case OP.LT :
+            case OP.GT :
+            case OP.NEQ:
+            case OP.EQ :
+                vals = Unit.comparison(arg1, arg2, token.op);
+                break;
             // TODO: More operators.
             default:
                 return evalError(token.pos, CEquation.EVAL_ERROR.UNKNOWN_BINARY_OP);
