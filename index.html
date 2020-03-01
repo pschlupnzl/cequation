@@ -48,12 +48,12 @@
                 }
             }
 
-            // const tests = CEquation.runTests();
-            // const butTests = document.getElementById("butTests");
-            // butTests.innerText = `Tests: ${tests.passed} passed, ${tests.failed} failed, ${tests.total} total`;
-            // butTests.addEventListener("click", function () {
-            //     CEquation.runTests();
-            // });
+            const tests = CEquation.runTests();
+            const butTests = document.getElementById("butTests");
+            butTests.innerText = `Tests: ${tests.passed} passed, ${tests.failed} failed, ${tests.total} total`;
+            butTests.addEventListener("click", function () {
+                CEquation.runTests();
+            });
 
             txtEqn.addEventListener("keyup", update);
             update();
@@ -72,13 +72,7 @@
                 x-value="3/s"
                 x-value="x + sin(y * pi) + max(0, 1)"
                 x-value="(1 + 2) * 3 - sin(.5) / sqrt(pi)"
-                x-value="3 mJ"
-                x-value="2 g"
-                x-value="1m/s + 2m/ms"
-                x-value="3s * 2us"
-                x-value="3 s^2/J^2"
-                x-value="(10 cm)^3"
-                value="10mJ < 1J"
+                value="(1 cm)^3 / 1L"
                 /></td>
         </tr>
         <tr>

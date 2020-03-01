@@ -115,23 +115,49 @@
         { eq: "kB", ans: { value: CEquation.SIConst.kB.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.kB.value, pos: 0 }] },
         { eq: "R", ans: { value: CEquation.SIConst.R.value },tokens: [{ typ: VOTYP.VAL, value: CEquation.SIConst.R.value, pos: 0 }] },
 
-        // // Units.
-        // //          kg      m      A      s      K     mol    cd    scale offset
-        // { eq: "3m", ans: { value: 3, unit: Unit.fromSIUnit("m")} },
-        // { eq: "3/s", ans: { value: 3, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0])} },
-        // { eq: "3m/s", ans: { value: 3, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        // { eq: "4m/2s", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        // { eq: "4m/2", ans: { value: 2, unit: new Unit("", [0, 1, 0, 0, 0, 0, 0])} },
-        // { eq: "4ms", ans: { value: 4, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0], 1e-3)} },
-        // { eq: "4g", ans: { value: 4, unit: new Unit("", [1, 0, 0, 0, 0, 0, 0], 1e-3)} },
-        // { eq: "4km^2", ans: { value: 4, unit: new Unit("", [0, 2, 0, 0, 0, 0, 0], 1e6)} },
-        // { eq: "2ms^-1", ans: { value: 2, unit: new Unit("", [0, 0, 0, -1, 0, 0, 0], 1e3)} },
-        // { eq: "2m s^-1", ans: { value: 2, unit: new Unit("", [0, 1, 0, -1, 0, 0, 0])} },
-        // { eq: "2kgs^-1", ans: { value: 2, unit: new Unit("", [1, 0, 0, -1, 0, 0, 0])} },
-        // { eq: "2J/W", ans: { value: 2, unit: new Unit("", [0, 0, 0, 1, 0, 0, 0])} },
-        // { eq: "(3ohm * 2A)/1V", ans: { value: 6, unit: new Unit("", )} },
-        // { eq: "3 mCkgs", ans: { value: 3, unit: new Unit("", [1, 0, 1, 2, 0, 0, 0], 1e-3)} },
+        // Units.
+        //          kg      m      A      s      K     mol    cd    scale offset
+        { eq: "3m", ans: { value: 3, unit: new Unit("m")} },
+        { eq: "4m", ans: { value: 4, unit: new Unit(["m"])} },
+        { eq: "5 sm", ans: { value: 5, unit: new Unit(["s", "m"])} },
+        { eq: "6 sm", ans: { value: 6, unit: new Unit(["m", "s"])} },
+        { eq: "7 m/s", ans: { value: 7, unit: new Unit(["m", "s^-1"])} },
+        { eq: "8 m s", ans: { value: 8, unit: new Unit(["m", "s"])} },
+        { eq: "9m", ans: { value: 9000, unit: new Unit("m", "m")} },
 
+        { eq: "3/s", ans: { value: 3, unit: new Unit("s", "", -1)} },
+        { eq: "4m/2s", ans: { value: 2, unit: new Unit(["m", "s^-1"])} },
+        { eq: "4m/2", ans: { value: 2, unit: new Unit("m")} },
+        { eq: "4ms", ans: { value: 4, unit: new Unit("s", "m")} },
+        { eq: "4ms", ans: { value: 0.004, unit: new Unit("s")} },
+        { eq: "4g", ans: { value: 4, unit: new Unit("g")} },
+        { eq: "4km^2", ans: { value: 4, unit: new Unit("m", "k", 2)} },
+        { eq: "4km^2", ans: { value: 4e6, unit: new Unit("m", "", 2)} },
+        { eq: "2ms^-1", ans: { value: 2, unit: new Unit("s", "m", -1)} },
+        { eq: "2ms^-1", ans: { value: 2e3, unit: new Unit("s", "", -1)} },
+        { eq: "2m s^-1", ans: { value: 2, unit: new Unit(["m", "s^-1"])} },
+        { eq: "2kgs^-1", ans: { value: 2, unit: new Unit(["kg", "s^-1"])} },
+        { eq: "2J/W", ans: { value: 2, unit: new Unit("s")} },
+        { eq: "(3ohm * 2A)/1V", ans: { value: 6, unit: new Unit()} },
+        { eq: "3 mCkgs", ans: { value: 3, unit: new Unit(["g", "A", "s^2"])} },
+
+        { eq: "1m/s + 2m/ms", ans: { value: 2001, unit: new Unit(["m", "s^-1"])}},
+        { eq: "4s * 2us", ans: { value: 8e-6, unit: new Unit("s", "", 2)}},
+        { eq: "6s * 2us", ans: { value: 12e-6, unit: new Unit(["s^2"])}},
+        { eq: "3 s^2/J^2", ans: { value: 3, unit: new Unit(["s^2", "J^-2"])}},
+        { eq: "3 s^2/J^2", ans: { value: 3, unit: new Unit("W", "", -2)}},
+        { eq: "15 J/s", ans: { value: 15, unit: new Unit(["kg", "m^2", "s^-3"])}},
+        { eq: "10 cm^3", ans: { value: 10, unit: new Unit("m", "c", 3)}},
+        { eq: "20 mm^3", ans: { value: 20e-9, unit: new Unit("m", "", 3)}},
+        { eq: "(30 cm)^3", ans: { value: 27000, unit: new Unit("m", "c", 3)}},
+        { eq: "8L", ans: { value: 8e-3, unit: new Unit("m", "", 3)}},
+        { eq: "7L", ans: { value: 7, unit: new Unit("m", "c", 3)}},
+        { eq: "(4 cm)^3", ans: { value: 64, unit: new Unit("L")}},
+
+        { eq: "10 J < 1J", ans: { value: 0, unit: new Unit()}},
+        { eq: "10 mJ < 1J", ans: { value: 1, unit: new Unit()}},
+        { eq: "10 J > 1J", ans: { value: 1, unit: new Unit()}},
+        { eq: "10 mJ > 1J", ans: { value: 0, unit: new Unit()}},
     ];
 
     const runTests = function () {
@@ -158,7 +184,6 @@
         let pass = true;
         const tokens = CEquation.parse(test.eq);
         const ans = CEquation.evaluate(tokens);
-        pass = assertEqual(test.ans.value, ans.value, "Mismatch answer") && pass;
 
         if (test.tokens) {
             pass = assertEqual(test.tokens.length, tokens.length, "Mismatch tokens length") && pass;
@@ -182,7 +207,8 @@
         }
 
         if (test.ans.unit) {
-            pass = assert(test.ans.unit.equals(ans.unit), "Mismatch units, expected `" + test.ans.unit.toString() + "`, got `" + ans.unit.toString() + "`.") && pass;
+            pass = assert(test.ans.unit.same(ans.unit), "Mismatch units, expected `" + test.ans.unit.toString() + "`, got `" + ans.unit.toString() + "`.") && pass;
+            pass = assert(Unit.equal(ans, test.ans), "Mismatch value, expected `" + test.ans.value + " " + test.ans.unit.toString() + "`, got `" + ans.value + " " + ans.unit.toString() + "`.") && pass;
         }
 
         return pass;

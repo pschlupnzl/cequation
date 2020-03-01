@@ -5,25 +5,37 @@
      * Class to handle processing of units. It is an array of symbols,
      * prefixes, and powers, with additional functions.
      * @param {string} symbol Symbol of unit, or empty string for dimensionless.
+     *    May also be an array of units with powers, e.g. ["m", "s^-2"].
      * @param {string=} prefix Optional prefix of unit, if used.
      * @param {number=} power Optional power, defaults to 1.
      */
     const Unit = function (symbol, prefix, power) {
         if (symbol) {
-            this.push({
-                symbol: symbol || "",
-                prefix: prefix || "",
-                power: power === undefined ? 1 : power
-            });
+            if (Array.isArray(symbol)) {
+                const self = this;
+                symbol.forEach(function (s) { 
+                    const match = /(\w+)(?:\^?([+-]?\d+))?$/.exec(s);
+                    if (match) {
+                        self.push({
+                            symbol: match[1],
+                            prefix: "",
+                            power: +match[2] || 1
+                        });
+                    }
+                });
+            } else {
+                this.push({
+                    symbol: symbol || "",
+                    prefix: prefix || "",
+                    power: power === undefined ? 1 : power
+                });
+            }
         }
     };
 
     const UnitPrototype = function () {};
     UnitPrototype.prototype = Array.prototype;
     Unit.prototype = new UnitPrototype();
-
-    // /** SI Unit symbols. */
-    // Unit.symbols = [ "kg", "m", "A", "s", "K", "mol", "cd"];
 
     /** Unicode superscript characters. */
     Unit.superscripts = "⁻¹²³⁴⁵⁶⁷⁸⁹";
@@ -70,7 +82,7 @@
      * are compatible.
      * @param {object} tok1 Token to compare.
      * @param {object} tok2 Token to compare against.
-     * @param {enum} op Operator.
+     * @param {enum} op Operator <=, <, >= >, !=, ==.
      * @returns {object} Dimensionless token with 1 if the comparison is true, otherwise 0.
      */
     Unit.comparison = function (tok1, tok2, op) {
@@ -90,6 +102,18 @@
             value: val,
             unit: new Unit()
         };
+    };
+
+    /**
+     * Returns a value indicating whether the two token values and their
+     * units are the same, e.g. 3m =? 3000mm -> TRUE.
+     * @param {object} tok1 Token to compare.
+     * @param {object} tok2 Token to compare against.
+     * @returns {boolean} Value indicating whether the two values and units are equal.
+     */
+    Unit.equal = function (tok1, tok2) {
+        return tok1.unit.same(tok2.unit)
+            && (Unit.comparison(tok1, tok2, CEquation.OP.EQ).value === 1);
     };
 
     /**
@@ -172,9 +196,9 @@
      * @returns {string} String of units with exponents.
      */
     Unit.prototype.toString = function (sep) {
-        return "[" + this.map(u =>
+        return this.map(u =>
             `${u.prefix}${u.symbol}${u.power === 1 ? "" : u.power < 0 ? Unit.superscripts[0] + Unit.superscripts[-u.power] : Unit.superscripts[u.power]}`
-        ).join(sep || " ") + "]" + " (" + this.prefixScale() + ")";
+        ).join(sep || " ");
     };
 
     // /**
