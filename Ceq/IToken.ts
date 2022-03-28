@@ -35,3 +35,10 @@ export interface IValueToken extends IToken {
   /** Numerical value, for numbers and constants. */
   value?: number;
 }
+
+export interface INodeToken extends IToken {
+  /** Parent node. */
+  parent?: INodeToken;
+  /** Child nodes. */
+  children?: INodeToken[];
+}

@@ -1,6 +1,6 @@
 import { constants, execs } from "./constants";
 import { IExec } from "./IExec";
-import { IToken, IValueToken, TokenType } from "./IToken";
+import { INodeToken, IToken, IValueToken, TokenType } from "./IToken";
 import { flush, opArgs } from "./precedence";
 import { scan } from "./scan";
 
@@ -221,10 +221,95 @@ export class CEq {
    * Experimenting with expression as tree.
    */
   public tree(): CEq {
-    // this.reduce((opToken: IToken, argTokens: IToken[]) => {
-    //   console.log(opToken, argTokens);
-    //   return opToken;
-    // });
+    const origin = this.reduce<INodeToken>(
+      (token: IToken) => ({ ...token, parent: undefined, children: undefined }),
+      (opToken: INodeToken, argTokens: INodeToken[]): INodeToken => {
+        argTokens.forEach((t) => (t.parent = opToken));
+        return { ...opToken, children: [...argTokens] };
+      }
+    );
+
+    const getBounds = (
+      origin: INodeToken
+    ): { maxcol: number; maxdepth: number; maxlen: number } => {
+      let col = 0;
+      let maxcol = 0;
+      let maxdepth = 0;
+      let maxlen = 0;
+      const recursive = (node: INodeToken, depth: number = 0) => {
+        node["depth"] = depth;
+        node["ticks"] = [];
+        node["label"] = [TokenType.Number, TokenType.Constant].includes(
+          node.type
+        )
+          ? `${node.match}`
+          : `(${node.match})`;
+        maxcol = col > maxcol ? col : maxcol;
+        maxdepth = depth > maxdepth ? depth : maxdepth;
+        maxlen = node["label"].length > maxlen ? node["label"].length : maxlen;
+
+        if (node.children) {
+          node.children?.forEach((child) => {
+            node["ticks"].push(col);
+            recursive(child, depth + 1);
+            col += 1;
+          });
+          col -= 1;
+        } else {
+          node["ticks"].push(col);
+        }
+      };
+      recursive(origin, 0);
+      return { maxcol, maxdepth, maxlen };
+    };
+
+    const show = (origin: INodeToken) => {
+      const bounds = getBounds(origin);
+      const w = bounds.maxlen + 1;
+      const rows = new Array(2 * bounds.maxdepth + 1)
+        .join(".")
+        .split(".")
+        .map((_) => new Array(w * bounds.maxcol + 3).join(" "));
+
+      const insert = (
+        depth: number,
+        col: number,
+        ins: string | number,
+        rowshift = 0
+      ): void => {
+        const r = 2 * depth + rowshift;
+        let c = w * col;
+        if (typeof ins === "number") {
+          ins = `|${new Array(w * ins).join("-")}+`;
+        }
+        if (ins[0] !== "(") {
+          c += 1;
+        }
+        rows[r] = `${rows[r].substring(0, c)}${ins}${rows[r].substring(
+          c + ins.length
+        )}`;
+      };
+
+      const recursive = (node: INodeToken) => {
+        const depth = node["depth"];
+        const col = node["ticks"][0];
+        const label = node["label"];
+        insert(depth, col, label);
+        if (node.children) {
+          insert(depth, col, "|", 1);
+          node["ticks"]
+            .slice(0, node["ticks"].length - 1)
+            .forEach((tick: number, index: number) =>
+              insert(depth, tick, node["ticks"][index + 1] - tick, 1)
+            );
+          node.children?.forEach((child) => recursive(child));
+        }
+      };
+      recursive(origin);
+      rows.forEach((row) => console.log(row));
+    };
+
+    show(origin);
     return this;
   }
 
@@ -232,24 +317,18 @@ export class CEq {
     mapper: (token: IToken) => T,
     reducer: (opToken: T, argTokens: T[]) => T
   ): T {
-    let stack = this._stack.map((token) => mapper(token));
-
-    let exec: IExec;
-    let narg: number;
-    let argTokens: T[];
+    let stack = this._stack.map((t) => mapper(t));
     for (let index = 0; index < stack.length; index += 1) {
-      let opToken: T;
-      let val: T;
       const token = stack[index];
       switch (token.type) {
         case TokenType.BinaryOp:
         case TokenType.ArgOp:
-          exec = execs[token.match];
-          narg = token.narg || exec.narg;
+          const exec = execs[token.match];
+          const narg = token.narg || exec.narg;
           index -= narg;
-          argTokens = stack.splice(index, narg);
-          opToken = stack.splice(index, 1)[0];
-          val = reducer(opToken, argTokens);
+          const argTokens = stack.splice(index, narg);
+          const opToken = stack.splice(index, 1)[0];
+          const val = reducer(opToken, argTokens);
           stack.splice(index, 0, val);
           break;
 
