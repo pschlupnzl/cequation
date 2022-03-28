@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "module": "commonjs",
+      "esModuleInterop": true,
+      "target": "es6",
+      "moduleResolution": "node",
+      "sourceMap": true,
+      "outDir": "dist",
+      "lib": ["esnext", "dom"]
+    },
+    "allowSyntheticDefaultImports": true,
+    "include": ["typings.d.ts", "src/**/*.ts", "CEq/**/*.ts"],
+    "exclude": ["test/**/*.test.ts", "**/*/test.ts", "**/dist/*.ts"]
+  }
+  
