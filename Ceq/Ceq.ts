@@ -1,13 +1,13 @@
-import { constants, argops } from "./constants";
-import { IExec, TExecCollection } from "./IExec";
-import { IToken, TokenType } from "./IToken";
+import { constants, execs } from "./constants";
+import { IExec } from "./IExec";
+import { IToken, IValueToken, TokenType } from "./IToken";
 import { flush, opArgs } from "./precedence";
 import { scan } from "./scan";
 
 /**
  * Class to process equations.
  */
-class CEq {
+export class CEq {
   /**
    * Order in which to scan for tokens. The order only matters in those cases
    * where the tokens would look the same.
@@ -23,22 +23,11 @@ class CEq {
     TokenType.Constant,
   ];
 
-  /** Executor functions. */
-  private static exec: TExecCollection = {
-    ...argops,
-    "+": { narg: 2, f: (a: number, b: number): number => a + b },
-    "-": { narg: 2, f: (a: number, b: number): number => a - b },
-    "*": { narg: 2, f: (a: number, b: number): number => a * b },
-    "/": { narg: 2, f: (a: number, b: number): number => a / b },
-    "^": { narg: 2, f: (a: number, b: number): number => Math.pow(a, b) },
-  };
-
   /** Negation: -2^2 = -4 (see Matlab), so handle negative as (-1)×. */
   private static negate: { [key: string]: IToken } = {
     value: {
       type: TokenType.Number,
       match: "-1",
-      value: -1,
       position: 0,
     },
     op: {
@@ -56,12 +45,15 @@ class CEq {
   public _stack: IToken[] = [];
 
   private print(tokens: IToken[]): CEq {
+    const sup = (s: number) =>
+      `${s}`.split("").map((ch) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[+ch] || ch);
+
     console.log(
       tokens
         .map(
           (token) =>
             `${token.match}${
-              token.bracket || token.narg ? `•${token.bracket}` : ""
+              token.bracket || token.narg ? `${sup(token.bracket)}` : ""
             }${token.narg ? `‡${token.narg}` : ""}`
         )
         .join(" · ")
@@ -105,11 +97,6 @@ class CEq {
             type,
             match,
           };
-          if (type === TokenType.Number) {
-            token.value = +match;
-          } else if (type === TokenType.Constant) {
-            token.value = constants[match];
-          }
           this._tokens.push(token);
         }
       }
@@ -163,8 +150,9 @@ class CEq {
                 if (token.match === "-") {
                   // Handle special-case "-" as negation.
                   // Following exponent, boost priority: 3^-2 = 3^(-2).
-                  const boost =
-                    ops[ops.length - 1]?.match === "^" ? bracket + 1 : bracket;
+                  const boost = "/^".includes(ops[ops.length - 1]?.match)
+                    ? bracket + 1
+                    : bracket;
                   stack.push({
                     ...CEq.negate.value,
                     position,
@@ -230,189 +218,78 @@ class CEq {
   }
 
   /**
-   * Evaluate the RPN stack to calculate the result.
+   * Experimenting with expression as tree.
    */
-  public eval(): number {
-    let stack = [...this._stack];
+  public tree(): CEq {
+    // this.reduce((opToken: IToken, argTokens: IToken[]) => {
+    //   console.log(opToken, argTokens);
+    //   return opToken;
+    // });
+    return this;
+  }
+
+  public reduce<T extends IToken>(
+    mapper: (token: IToken) => T,
+    reducer: (opToken: T, argTokens: T[]) => T
+  ): T {
+    let stack = this._stack.map((token) => mapper(token));
+
     let exec: IExec;
     let narg: number;
-    let args: number[];
-    for (let position = 0; position < stack.length; position += 1) {
-      let val: number, op: string;
-      const token = stack[position];
+    let argTokens: T[];
+    for (let index = 0; index < stack.length; index += 1) {
+      let opToken: T;
+      let val: T;
+      const token = stack[index];
       switch (token.type) {
         case TokenType.BinaryOp:
         case TokenType.ArgOp:
-          exec = CEq.exec[token.match];
+          exec = execs[token.match];
           narg = token.narg || exec.narg;
-          position -= narg;
-          args = stack.splice(position, narg).map((t) => t.value);
-          op = stack.splice(position, 1)[0].match;
-          val = exec.f(...args);
-          stack.splice(position, 0, {
-            position: token.position,
-            type: TokenType.Number,
-            match: "",
-            value: val,
-          });
+          index -= narg;
+          argTokens = stack.splice(index, narg);
+          opToken = stack.splice(index, 1)[0];
+          val = reducer(opToken, argTokens);
+          stack.splice(index, 0, val);
           break;
 
         case TokenType.Push:
-          stack.splice(position, 1); // Remove push operation
-          position -= 2;
-          stack.splice(position, 1); // Remove popped value.
+          stack.splice(index, 1); // Remove push operation
+          index -= 2;
+          stack.splice(index, 1); // Remove popped value.
           break;
       }
     }
     if (stack.length > 1) {
       console.warn("stack left over", stack);
     }
-    return stack[0].value;
+    return stack[0];
+  }
+
+  /**
+   * Evaluate the RPN stack to calculate the result.
+   */
+  public calc(): number {
+    return this.reduce<IValueToken>(
+      (token: IToken) => ({
+        ...token,
+        value:
+          token.type === TokenType.Number
+            ? +token.match
+            : token.type === TokenType.Constant
+            ? constants[token.match]
+            : undefined,
+      }),
+      (opToken: IValueToken, argTokens: IValueToken[]) => {
+        const exec: IExec = execs[opToken.match];
+        const val = exec.f(...argTokens.map((t) => t.value));
+        return {
+          position: opToken.position,
+          type: TokenType.Number,
+          match: "",
+          value: val,
+        };
+      }
+    ).value;
   }
 }
-console.log(
-  [
-    { src: "1", expect: ["1"] },
-    { src: "1+2", expect: ["1", "2", "+"] },
-    { src: "1+2*3", expect: ["1", "2", "3", "*", "+"] },
-    { src: "(1+2)*3", expect: ["1", "2", "+", "3", "*"] },
-    { src: "1+2+3", expect: ["1", "2", "+", "3", "+"] },
-    { src: "1+2-3", expect: ["1", "2", "3", "-", "+"] },
-    { src: "1-2+3", expect: ["1", "2", "-", "3", "+"] },
-    { src: "1+2-3+4", expect: ["1", "2", "3", "-", "+", "4", "+"] },
-    { src: "1-2-3-4", expect: ["1", "2", "-", "3", "-", "4", "-"] },
-    { src: "1*2*3", expect: ["1", "2", "*", "3", "*"] },
-    { src: "1*2/3", expect: ["1", "2", "3", "/", "*"] },
-    { src: "1/2*3", expect: ["1", "2", "/", "3", "*"] },
-    { src: "3^2", expect: ["3", "2", "^"] },
-    { src: "-3^2", expect: ["-1", "3", "2", "^", "*"] },
-    { src: "3^-2", expect: ["3", "-1", "2", "*", "^"] },
-    { src: "3^(-2)", expect: ["3", "-1", "2", "*", "^"] },
-    { src: "-3^-2", expect: ["-1", "3", "-1", "2", "*", "^", "*"] },
-    {
-      src: "3 * (5 - 3) + (3 + 1)/2",
-      expect: ["3", "5", "3", "-", "*", "3", "1", "+", "2", "/", "+"],
-    },
-  ]
-    // .slice(0, 0)
-    .map((test) => {
-      const actual = new CEq()
-        .parse(test.src)
-        .process()
-        ._stack.map((tok) => tok.match);
-      const pass = test.expect.every(
-        (expect, index) => expect === actual[index]
-      );
-      if (!pass) {
-        console.log(
-          `${pass ? "ok  " : "FAIL"} ${test.src} ${actual.join(", ")}`
-        );
-      }
-      return { pass };
-    })
-    .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) + " passed parse"
-);
-
-console.log(
-  [
-    { str: "1", expect: 1 },
-    { str: "1 + 2 * 3", expect: 7 },
-    { str: "1 + 2 - 3 + 4", expect: 4 },
-    { str: "1 - 2 - 3 - 4", expect: -8 },
-    { str: "1 + 2 - 3", expect: 0 },
-    { str: "1 - 3 + 2", expect: 0 },
-    { str: "1 / 2 * 3", expect: 1.5 },
-    { str: "1 * 3 / 2", expect: 1.5 },
-    { str: "1 / 2 / 2", expect: 0.25 },
-    { str: "2*-2", expect: -4 },
-    { str: "-2*2", expect: -4 },
-    { str: "-2*-2", expect: 4 },
-    { str: "2^3", expect: 8 },
-    { str: "2^3^4", expect: 4096 },
-    { str: "1 + +2", expect: 3 },
-    { str: "1 - +2", expect: -1 },
-    { str: "1 * +2", expect: 2 },
-    { str: "1 * -2", expect: -2 },
-    { str: "(1 + 2) * 3", expect: 9 },
-    { str: "9 - 2^2", expect: 5 },
-    { str: "3^2", expect: 9 },
-    { str: "-3^2", expect: -9 },
-    { str: "3^-2", expect: 1 / 9 },
-    { str: "3^(-2)", expect: 1 / 9 },
-    { str: "-3^-2", expect: -1 / 9 },
-    { str: "pi", expect: 3.141592653589793 },
-    { str: "cos(0)", expect: 1 },
-    { str: "3 * (cos(0) + sin(0))", expect: 3 },
-    { str: "3 * (5 - 3) + (3 + 1)/2", expect: 8 },
-    { str: "sin(pi)", expect: 0 },
-    { str: "cos(3*pi/2)", expect: 0 },
-    { str: "sqrt(4)", expect: 2 },
-    { str: "(5 + 11) /  (4 + 2*2)", expect: 2 },
-    { str: "3^(1+2)", expect: 27 },
-    { str: "sind(90)", expect: 1 },
-    { str: "abs(1)", expect: 1 },
-    { str: "abs(-1)", expect: 1 },
-    { str: "log(10)", expect: 2.302585092994046 },
-    { str: "log10(10)", expect: 1 },
-    { str: "!1", expect: 0 },
-    { str: "!!1", expect: 1 },
-    { str: "!(1 - 1)", expect: 1},
-    { str: "sgn(-.1)", expect: -1 },
-    { str: "sgn(+.1)", expect: 1 },
-    { str: "sgn(0)", expect: 0 },
-    { str: "asin(sin(0.5))", expect: 0.5 },
-    { str: "asind(sind(0.5))", expect: 0.5 },
-    { str: "atan2(1,1)", expect: Math.PI / 4 },
-    { str: "atan2d(1,1)", expect: 45 },
-    { str: "atan2d(2,(13, 1+1))", expect: 45 },
-    { str: "ceil(0.1)", expect: 1 },
-    { str: "floor(0.9)", expect: 0 },
-    { str: "round(0.4)", expect: 0 },
-    { str: "round(0.5)", expect: 1 },
-    { str: "max(3,2)", expect: 3 },
-    { str: "max(2,3)", expect: 3 },
-    { str: "max(3)", expect: 3 },
-    { str: "max(1,3,2)", expect: 3 },
-    { str: "5,max(1,3,2)", expect: 3 },
-    { str: "5,max(1,3,2),-1", expect: -1 },
-    { str: "max(5,0),max(0,1)", expect: 1 },
-    { str: "max(3,(12, 0),-4)", expect: 3 },
-    { str: "2,3", expect: 3 },
-    { str: "1 + 3, 4 + 5", expect: 9 },
-    { str: "1 + (3, 4) + 5", expect: 10 },
-  ]
-    // .slice(0, 0) // Include this line to suppress the tests
-    .map((test) => {
-      const actual = new CEq().parse(test.str).process().eval();
-      const pass = Math.abs(test.expect - actual) < 1e-12;
-      if (!pass) {
-        console.log(`${pass ? "ok  " : "FAIL"} ${test.str} ${actual}`);
-      }
-      return { pass };
-    })
-    .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) + " passed eval"
-);
-
-[
-  // Tests.
-  // "abs(-2^2,3)",
-  // "1,2",
-  // "abs(5, 8)",
-  // "0, 1 + max(2, min(3, 4), 5^6)",
-  // "atan2d(2,(13, 1+1))"
-  "max(3,(12, 0),4)",
-  //   "max(2,4), max(1,0,0)",
-  // "2 * (cos(0) + sin(0))"
-  // "3 * (5 - 3) + (3 + 1)/2",
-].forEach((str) => {
-  console.log(
-    new CEq()
-      // Chain
-      .parse(str)
-      .printSource()
-      .printTokens()
-      .process()
-      .printStack()
-      .eval()
-  );
-});

@@ -45,3 +45,13 @@ export const argops: TExecCollection = {
   max: { narg: -1, f: (...args) => Math.max(...args) },
   min: { narg: -1, f: (...args) => Math.min(...args) },
 };
+
+/** Operator executor functions, including infix binary. */
+export const execs: TExecCollection = {
+  ...argops,
+  "+": { narg: 2, f: (a, b) => a + b },
+  "-": { narg: 2, f: (a, b) => a - b },
+  "*": { narg: 2, f: (a, b) => a * b },
+  "/": { narg: 2, f: (a, b) => a / b },
+  "^": { narg: 2, f: (a, b) => Math.pow(a, b) },
+};

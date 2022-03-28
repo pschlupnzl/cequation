@@ -1,0 +1,24 @@
+import { CEq } from "./Ceq";
+import { test_eval, test_parse, test_scan } from "./tests";
+
+test_scan();
+test_parse();
+test_eval();
+
+[
+  // Tests.
+  "3 * (5 - 3) + (3 + 1)/-2",
+  // "(3 + 1)/-2",
+].forEach((str) => {
+  console.log(
+    new CEq()
+      // Chain
+      .parse(str)
+      .printSource()
+      .printTokens()
+      .process()
+      .printStack()
+      .tree()
+      .calc()
+  );
+});

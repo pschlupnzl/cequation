@@ -25,10 +25,13 @@ export interface IToken {
   position: number;
   /** The matched token string. */
   match: string;
-  /** Numerical value, for numbers. */
-  value?: number;
   /** Precedence elevated by brackets. */
   bracket?: number;
   /** Number of arguments for vari-arg operators. */
   narg?: number;
+}
+
+export interface IValueToken extends IToken {
+  /** Numerical value, for numbers and constants. */
+  value?: number;
 }
