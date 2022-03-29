@@ -32,7 +32,7 @@ export class CEq {
     },
     op: {
       type: TokenType.ArgOp,
-      match: "-1x",
+      match: "*",
       position: 0,
     },
   };

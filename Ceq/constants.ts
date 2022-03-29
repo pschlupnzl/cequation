@@ -52,7 +52,6 @@ export const execs: TExecCollection = {
   "+": { narg: 2, f: (a, b) => a + b },
   "-": { narg: 2, f: (a, b) => a - b },
   "*": { narg: 2, f: (a, b) => a * b },
-  "-1x": { narg: 2, f: (a, b) => a * b },
   "/": { narg: 2, f: (a, b) => a / b },
   "^": { narg: 2, f: (a, b) => Math.pow(a, b) },
 };

@@ -6,7 +6,6 @@ const precedence = {
   "+": 12,
   "-": 13,
   "*": 14,
-  "-1x": 14, // Negate: Multiply by -1.
   "/": 15,
   "^": 16,
 };
