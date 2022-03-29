@@ -83,10 +83,7 @@ export const test_parse = () => {
       },
     ]
       .map((test) => {
-        const actual = new CEq()
-          .parse(test.src)
-          .process()
-          ._stack.map((tok) => tok.match);
+        const actual = CEq.parse(test.src)._stack.map((tok) => tok.match);
         const pass = test.expect.every(
           (expect, index) => expect === actual[index]
         );
@@ -174,7 +171,7 @@ export const test_eval = () => {
       { str: "1 + (3, 4) + 5", expect: 10 },
     ]
       .map((test) => {
-        const actual = new CEq().parse(test.str).process().calc();
+        const actual = CEq.parse(test.str).calc();
         const pass = Math.abs(test.expect - actual) < 1e-12;
         if (!pass) {
           console.log(`${pass ? "ok  " : "FAIL"} ${test.str} ${actual}`);

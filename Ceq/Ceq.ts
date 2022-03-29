@@ -12,16 +12,19 @@ export class CEq {
    * Order in which to scan for tokens. The order only matters in those cases
    * where the tokens would look the same.
    */
-  private static scanOrder = [
-    TokenType.Blank,
-    TokenType.Number,
-    TokenType.BinaryOp,
-    TokenType.Open,
-    TokenType.Close,
-    TokenType.Push,
-    TokenType.ArgOp,
-    TokenType.Constant,
-  ];
+  private static scanOrder: { [key: string]: TokenType[] } = {
+    [TokenType.Number]: [
+      TokenType.Number,
+      TokenType.BinaryOp,
+      TokenType.Open,
+      TokenType.Close,
+      TokenType.Push,
+      TokenType.ArgOp,
+      TokenType.Constant,
+    ],
+    [TokenType.BinaryOp]: [TokenType.BinaryOp, TokenType.Push, TokenType.Close],
+    [TokenType.Open]: [TokenType.Open],
+  };
 
   /** Negation: -2^2 = -4 (see Matlab), so handle negative as (-1)×. */
   private static negate: { [key: string]: IToken } = {
@@ -43,6 +46,12 @@ export class CEq {
   public _tokens: IToken[] = [];
   /** RPN stack. */
   public _stack: IToken[] = [];
+
+  constructor(src: string, tokens: IToken[], stack: IToken[]) {
+    this.src = src;
+    this._tokens = tokens;
+    this._stack = stack;
+  }
 
   private print(tokens: IToken[]): CEq {
     const sup = (s: number) =>
@@ -74,47 +83,47 @@ export class CEq {
     return this.print(this._stack);
   }
 
-  /** Parse a string of the form 1 + 2 * sin(pi / 4). */
-  public parse(str: string): CEq {
-    this.src = str;
-    this._tokens = [];
-    let position: number;
-    try {
-      let match: string;
-      for (position = 0; position < str.length; position += match.length) {
-        match = null;
-        const type = CEq.scanOrder.find((type) => {
-          match = scan(str, position, type);
-          return match && match.length;
-        });
-        if (!match) {
-          throw new Error("Unknown expression");
-        } else if (type === TokenType.Blank) {
-          // NOP - ignore blanks.
-        } else {
-          const token: IToken = {
-            position,
-            type,
-            match,
-          };
-          this._tokens.push(token);
-        }
-      }
-    } catch (err) {
-      console.error(
-        `${err} ${str.substring(0, position)} →${str.substring(position)}`
-      );
-    }
+  // /** Parse a string of the form 1 + 2 * sin(pi / 4). */
+  // public parse(str: string): CEq {
+  //   this.src = str;
+  //   this._tokens = [];
+  //   let position: number;
+  //   try {
+  //     let match: string;
+  //     for (position = 0; position < str.length; position += match.length) {
+  //       match = null;
+  //       const type = CEq.scanOrder.find((type) => {
+  //         match = scan(str, position, type);
+  //         return match && match.length;
+  //       });
+  //       if (!match) {
+  //         throw new Error("Unknown expression");
+  //       } else if (type === TokenType.Blank) {
+  //         // NOP - ignore blanks.
+  //       } else {
+  //         const token: IToken = {
+  //           position,
+  //           type,
+  //           match,
+  //         };
+  //         this._tokens.push(token);
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error(
+  //       `${err} ${str.substring(0, position)} →${str.substring(position)}`
+  //     );
+  //   }
 
-    return this;
-  }
+  //   return this;
+  // }
 
   /**
-   * Process the chain of tokens from the parse method to assemble the RPN stack.
+   * Parse a string of the form 1 + 2 * sin(pi / 4).
    */
-  public process(): CEq {
+  public static parse(src: string): CEq {
     /** Input tokens. */
-    const tokens: IToken[] = this._tokens;
+    const tokens: IToken[] = [];
     /** Assembling RPN stack. */
     const stack: IToken[] = [];
     /** Holding pen for operators being assembled. */
@@ -123,11 +132,28 @@ export class CEq {
     let bracket = 0;
     /** Hold process position for error handling. */
     let position: number;
+    /** Token matching. */
+    let match: string;
     try {
       let lookFor: TokenType = TokenType.Number;
-      for (let k = 0; k < tokens.length; k += 1) {
-        const token = tokens[k];
-        position = token.position;
+      for (position = 0; position < src.length; position += match.length) {
+        // Skip blanks.
+        match = scan(src, position, TokenType.Blank);
+        if (match && match.length) {
+          continue;
+        }
+        // Scan for expected token.
+        const type = CEq.scanOrder[lookFor].find((type) => {
+          match = scan(src, position, type);
+          return match && match.length;
+        });
+        if (!type) {
+          throw new Error(`Expected ${lookFor}`);
+        }
+
+        // Process the token.
+        const token: IToken = { position, type, match };
+        tokens.push(token);
         switch (lookFor) {
           case TokenType.Number:
             switch (token.type) {
@@ -166,9 +192,7 @@ export class CEq {
                 }
                 break;
               default:
-                throw new Error(
-                  `Expected number, got ${token.type} ${token.match}`
-                );
+                throw new Error(`Unhandled ${lookFor} ${token.type}`);
             }
             break;
 
@@ -186,7 +210,7 @@ export class CEq {
                 bracket -= 1;
                 break;
               default:
-                throw new Error("Expected binary op");
+                throw new Error(`Unhandled ${lookFor} ${token.type}`);
             }
             break;
 
@@ -204,17 +228,14 @@ export class CEq {
             throw new Error(`not yet implemented: ${lookFor}`);
         }
       }
+      flush(null, stack, ops, bracket);
+      opArgs(stack);
     } catch (err) {
       console.error(
-        `${err} ${this.src.substring(0, position)} →${this.src.substring(
-          position
-        )}`
+        `${err} ${src.substring(0, position)} →${src.substring(position)}`
       );
     }
-    flush(null, stack, ops, bracket);
-    opArgs(stack);
-    this._stack = stack;
-    return this;
+    return new CEq(src, tokens, stack);
   }
 
   /**
