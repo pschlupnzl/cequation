@@ -12,7 +12,7 @@ export enum TokenType {
   /** Push argument, i.e. comma. */
   Push = "push",
   /** Operator with argument, e.g. sin(), max(), ...; also "!". */
-  ArgOp = "arg",
+  ArgOp = "argop",
   /** Constants, e.g. pi. */
   Constant = "constant",
 }

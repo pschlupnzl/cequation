@@ -31,8 +31,8 @@ export class CEq {
       position: 0,
     },
     op: {
-      type: TokenType.BinaryOp,
-      match: "*",
+      type: TokenType.ArgOp,
+      match: "-1x",
       position: 0,
     },
   };
@@ -323,6 +323,7 @@ export class CEq {
       switch (token.type) {
         case TokenType.BinaryOp:
         case TokenType.ArgOp:
+          // console.log(`reduce ${token.match} ${token.type}`);
           const exec = execs[token.match];
           const narg = token.narg || exec.narg;
           index -= narg;
@@ -330,6 +331,7 @@ export class CEq {
           const opToken = stack.splice(index, 1)[0];
           const val = reducer(opToken, argTokens);
           stack.splice(index, 0, val);
+          // console.log('--ok')
           break;
 
         case TokenType.Push:
@@ -361,13 +363,19 @@ export class CEq {
       }),
       (opToken: IValueToken, argTokens: IValueToken[]) => {
         const exec: IExec = execs[opToken.match];
-        const val = exec.f(...argTokens.map((t) => t.value));
-        return {
-          position: opToken.position,
-          type: TokenType.Number,
-          match: "",
-          value: val,
-        };
+        try {
+          const val = exec.f(...argTokens.map((t) => t.value));
+          return {
+            position: opToken.position,
+            type: TokenType.Number,
+            match: "",
+            value: val,
+          };
+        } catch (err) {
+          console.log(opToken, exec);
+          this.printSource().printTokens().printStack();
+          throw err;
+        }
       }
     ).value;
   }

@@ -1,4 +1,4 @@
-import { argops } from "./constants";
+import { argops, execs } from "./constants";
 import { IToken, TokenType } from "./IToken";
 
 const precedence = {
@@ -6,6 +6,7 @@ const precedence = {
   "+": 12,
   "-": 13,
   "*": 14,
+  "-1x": 14, // Negate: Multiply by -1.
   "/": 15,
   "^": 16,
 };
@@ -51,7 +52,7 @@ export const opArgs = (tokens: IToken[]) => {
   for (let position = 0; position < tokens.length; position += 1) {
     const token = tokens[position];
     if (token.type === TokenType.ArgOp) {
-      const exec = argops[token.match];
+      const exec = execs[token.match];
       if (exec.narg !== 1) {
         // For non-unary operators, scan backwards and clean out all PUSH ops at
         // the level immediately above the current bracket.
