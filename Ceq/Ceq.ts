@@ -1,13 +1,13 @@
 import { constants, execs } from "./constants";
 import { IExec } from "./IExec";
-import { INodeToken, IToken, IValueToken, TokenType } from "./IToken";
+import { IToken, IValueToken, TokenType } from "./IToken";
 import { flush, opArgs } from "./precedence";
-import { scan } from "./scan";
+import { TLexer } from "./TLexer";
 
 /**
  * Class to process equations.
  */
-export class CEq {
+class CEq {
   /**
    * Order in which to scan for tokens. The order only matters in those cases
    * where the tokens would look the same.
@@ -31,24 +31,26 @@ export class CEq {
     value: {
       type: TokenType.Number,
       match: "-1",
+      length: 0,
       position: 0,
     },
     op: {
-      type: TokenType.ArgOp,
+      type: TokenType.BinaryOp,
       match: "*",
+      length: 1,
       position: 0,
     },
   };
 
   /** Source string. */
-  private src: string = "";
+  private _src: string = "";
   /** Parsed tokens. */
   public _tokens: IToken[] = [];
   /** RPN stack. */
   public _stack: IToken[] = [];
 
   constructor(src: string, tokens: IToken[], stack: IToken[]) {
-    this.src = src;
+    this._src = src;
     this._tokens = tokens;
     this._stack = stack;
   }
@@ -71,7 +73,7 @@ export class CEq {
   }
 
   public printSource(): CEq {
-    console.log(`«${this.src}»`);
+    console.log(`«${this._src}»`);
     return this;
   }
 
@@ -83,45 +85,10 @@ export class CEq {
     return this.print(this._stack);
   }
 
-  // /** Parse a string of the form 1 + 2 * sin(pi / 4). */
-  // public parse(str: string): CEq {
-  //   this.src = str;
-  //   this._tokens = [];
-  //   let position: number;
-  //   try {
-  //     let match: string;
-  //     for (position = 0; position < str.length; position += match.length) {
-  //       match = null;
-  //       const type = CEq.scanOrder.find((type) => {
-  //         match = scan(str, position, type);
-  //         return match && match.length;
-  //       });
-  //       if (!match) {
-  //         throw new Error("Unknown expression");
-  //       } else if (type === TokenType.Blank) {
-  //         // NOP - ignore blanks.
-  //       } else {
-  //         const token: IToken = {
-  //           position,
-  //           type,
-  //           match,
-  //         };
-  //         this._tokens.push(token);
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error(
-  //       `${err} ${str.substring(0, position)} →${str.substring(position)}`
-  //     );
-  //   }
-
-  //   return this;
-  // }
-
   /**
    * Parse a string of the form 1 + 2 * sin(pi / 4).
    */
-  public static parse(src: string): CEq {
+  public static parse(src: string, lexer: TLexer): CEq {
     /** Input tokens. */
     const tokens: IToken[] = [];
     /** Assembling RPN stack. */
@@ -132,35 +99,39 @@ export class CEq {
     let bracket = 0;
     /** Hold process position for error handling. */
     let position: number;
-    /** Token matching. */
-    let match: string;
+    // /** Token matching. */
+    // let match: string;
     try {
-      let lookFor: TokenType = TokenType.Number;
-      for (position = 0; position < src.length; position += match.length) {
+      let context: TokenType = TokenType.Number;
+      for (position = 0; position < src.length; ) {
         // Skip blanks.
-        match = scan(src, position, TokenType.Blank);
-        if (match && match.length) {
+        let token = lexer(src, position, TokenType.Blank);
+        if (token && token.length) {
+          position += token.length;
           continue;
         }
+
         // Scan for expected token.
-        const type = CEq.scanOrder[lookFor].find((type) => {
-          match = scan(src, position, type);
-          return match && match.length;
-        });
-        if (!type) {
-          throw new Error(`Expected ${lookFor}`);
+        for (let type of CEq.scanOrder[context]) {
+          token = lexer(src, position, type);
+          if (!!token) {
+            break;
+          }
         }
+        if (!token) {
+          throw new Error(`Expected ${context}`);
+        }
+        position += token.length;
 
         // Process the token.
-        const token: IToken = { position, type, match };
         tokens.push(token);
-        switch (lookFor) {
+        switch (context) {
           case TokenType.Number:
             switch (token.type) {
               case TokenType.Number:
               case TokenType.Constant:
                 stack.push({ ...token, bracket });
-                lookFor = TokenType.BinaryOp;
+                context = TokenType.BinaryOp;
                 break;
               case TokenType.Open:
                 bracket += 1;
@@ -169,7 +140,7 @@ export class CEq {
                 ops.push({ ...token, bracket });
                 if (token.match !== "!") {
                   // NOT operator doesn't take brackets.
-                  lookFor = TokenType.Open;
+                  context = TokenType.Open;
                 }
                 break;
               case TokenType.BinaryOp:
@@ -192,7 +163,7 @@ export class CEq {
                 }
                 break;
               default:
-                throw new Error(`Unhandled ${lookFor} ${token.type}`);
+                throw new Error(`Unhandled ${context} ${token.type}`);
             }
             break;
 
@@ -200,17 +171,17 @@ export class CEq {
             switch (token.type) {
               case TokenType.BinaryOp:
                 flush(token, stack, ops, bracket);
-                lookFor = TokenType.Number;
+                context = TokenType.Number;
                 break;
               case TokenType.Push:
                 flush(token, stack, ops, bracket);
-                lookFor = TokenType.Number;
+                context = TokenType.Number;
                 break;
               case TokenType.Close:
                 bracket -= 1;
                 break;
               default:
-                throw new Error(`Unhandled ${lookFor} ${token.type}`);
+                throw new Error(`Unhandled ${context} ${token.type}`);
             }
             break;
 
@@ -218,17 +189,18 @@ export class CEq {
             switch (token.type) {
               case TokenType.Open:
                 bracket += 1;
-                lookFor = TokenType.Number;
+                context = TokenType.Number;
                 break;
               default:
                 throw new Error("Expected -(-");
             }
             break;
           default:
-            throw new Error(`not yet implemented: ${lookFor}`);
+            throw new Error(`not yet implemented: ${context}`);
         }
       }
       flush(null, stack, ops, bracket);
+      // Determine arg count for variable-argument functions.
       opArgs(stack);
     } catch (err) {
       console.error(
@@ -239,101 +211,13 @@ export class CEq {
   }
 
   /**
-   * Experimenting with expression as tree.
+   * Process the parsed token stack. This can be used e.g. to calculate the
+   * equation final value, or to map to a different representation.
+   * @param mapper Delegate to prepare the parsed token to the derived type.
+   * @param reducer Delegate to receive operator tokens and their arguments,
+   * returning the token to be substituted in place of the operator and all
+   * arguments.
    */
-  public tree(): CEq {
-    const origin = this.reduce<INodeToken>(
-      (token: IToken) => ({ ...token, parent: undefined, children: undefined }),
-      (opToken: INodeToken, argTokens: INodeToken[]): INodeToken => {
-        argTokens.forEach((t) => (t.parent = opToken));
-        return { ...opToken, children: [...argTokens] };
-      }
-    );
-
-    const getBounds = (
-      origin: INodeToken
-    ): { maxcol: number; maxdepth: number; maxlen: number } => {
-      let col = 0;
-      let maxcol = 0;
-      let maxdepth = 0;
-      let maxlen = 0;
-      const recursive = (node: INodeToken, depth: number = 0) => {
-        node["depth"] = depth;
-        node["ticks"] = [];
-        node["label"] = [TokenType.Number, TokenType.Constant].includes(
-          node.type
-        )
-          ? `${node.match}`
-          : `(${node.match})`;
-        maxcol = col > maxcol ? col : maxcol;
-        maxdepth = depth > maxdepth ? depth : maxdepth;
-        maxlen = node["label"].length > maxlen ? node["label"].length : maxlen;
-
-        if (node.children) {
-          node.children?.forEach((child) => {
-            node["ticks"].push(col);
-            recursive(child, depth + 1);
-            col += 1;
-          });
-          col -= 1;
-        } else {
-          node["ticks"].push(col);
-        }
-      };
-      recursive(origin, 0);
-      return { maxcol, maxdepth, maxlen };
-    };
-
-    const show = (origin: INodeToken) => {
-      const bounds = getBounds(origin);
-      const w = bounds.maxlen + 1;
-      const rows = new Array(2 * bounds.maxdepth + 1)
-        .join(".")
-        .split(".")
-        .map((_) => new Array(w * bounds.maxcol + 3).join(" "));
-
-      const insert = (
-        depth: number,
-        col: number,
-        ins: string | number,
-        rowshift = 0
-      ): void => {
-        const r = 2 * depth + rowshift;
-        let c = w * col;
-        if (typeof ins === "number") {
-          ins = `|${new Array(w * ins).join("-")}+`;
-        }
-        if (ins[0] !== "(") {
-          c += 1;
-        }
-        rows[r] = `${rows[r].substring(0, c)}${ins}${rows[r].substring(
-          c + ins.length
-        )}`;
-      };
-
-      const recursive = (node: INodeToken) => {
-        const depth = node["depth"];
-        const col = node["ticks"][0];
-        const label = node["label"];
-        insert(depth, col, label);
-        if (node.children) {
-          insert(depth, col, "|", 1);
-          node["ticks"]
-            .slice(0, node["ticks"].length - 1)
-            .forEach((tick: number, index: number) =>
-              insert(depth, tick, node["ticks"][index + 1] - tick, 1)
-            );
-          node.children?.forEach((child) => recursive(child));
-        }
-      };
-      recursive(origin);
-      rows.forEach((row) => console.log(row));
-    };
-
-    show(origin);
-    return this;
-  }
-
   public reduce<T extends IToken>(
     mapper: (token: IToken) => T,
     reducer: (opToken: T, argTokens: T[]) => T
@@ -344,15 +228,14 @@ export class CEq {
       switch (token.type) {
         case TokenType.BinaryOp:
         case TokenType.ArgOp:
-          // console.log(`reduce ${token.match} ${token.type}`);
           const exec = execs[token.match];
           const narg = token.narg || exec.narg;
+          // console.log(`reduce ${token.match} ${token.type} ‡${narg}`);
           index -= narg;
           const argTokens = stack.splice(index, narg);
           const opToken = stack.splice(index, 1)[0];
           const val = reducer(opToken, argTokens);
           stack.splice(index, 0, val);
-          // console.log('--ok')
           break;
 
         case TokenType.Push:
@@ -363,7 +246,7 @@ export class CEq {
       }
     }
     if (stack.length > 1) {
-      console.warn("stack left over", stack);
+      console.warn(`Stack left over! ${stack.map((t) => t.match).join(" • ")}`);
     }
     return stack[0];
   }
@@ -390,6 +273,7 @@ export class CEq {
             position: opToken.position,
             type: TokenType.Number,
             match: "",
+            length: 0,
             value: val,
           };
         } catch (err) {
@@ -401,3 +285,5 @@ export class CEq {
     ).value;
   }
 }
+
+export default CEq;

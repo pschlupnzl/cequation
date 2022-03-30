@@ -1,4 +1,4 @@
-import { CEq } from "./Ceq";
+import CEq from "./Ceq";
 import { TokenType } from "./IToken";
 import { scan } from "./scan";
 
@@ -7,16 +7,16 @@ export const test_scan = () => {
   console.log(
     [
       {
-        lookFor: TokenType.Blank,
+        context: TokenType.Blank,
         tests: [
-          { str: "", expect: null },
+          { str: "", expect: undefined },
           { str: " ", expect: " " },
           { str: "  ", expect: "  " },
           { str: "   ", expect: "   " },
         ],
       },
       {
-        lookFor: TokenType.Number,
+        context: TokenType.Number,
         tests: [
           { str: "1", expect: "1" },
           { str: "12", expect: "12" },
@@ -27,21 +27,21 @@ export const test_scan = () => {
           { str: "00000.30000", expect: "00000.30000" },
           { str: "1e10", expect: "1e10" },
           { str: "1e1.234", expect: "1e1" },
-          { str: ".", expect: null },
-          { str: "", expect: null },
-          { str: "a", expect: null },
-          { str: "-1", expect: null },
+          { str: ".", expect: undefined },
+          { str: "", expect: undefined },
+          { str: "a", expect: undefined },
+          { str: "-1", expect: undefined },
         ],
       },
     ]
       .map((suite) => {
         const passes = suite.tests.map(
           (test: { str: string; expect: string | number }) => {
-            const actual = scan(test.str, 0, suite.lookFor);
-            const pass = test.expect === actual;
+            const actual = scan(test.str, 0, suite.context);
+            const pass = test.expect === actual?.match;
             if (!pass) {
               console.log(
-                `${pass ? "pass" : "FAIL"} ${suite.lookFor} ${test.str} "${
+                `${pass ? "pass" : "FAIL"} ${suite.context} ${test.str} "${
                   actual || ""
                 }"`
               );
@@ -83,7 +83,7 @@ export const test_parse = () => {
       },
     ]
       .map((test) => {
-        const actual = CEq.parse(test.src)._stack.map((tok) => tok.match);
+        const actual = CEq.parse(test.src, scan)._stack.map((tok) => tok.match);
         const pass = test.expect.every(
           (expect, index) => expect === actual[index]
         );
@@ -171,7 +171,7 @@ export const test_eval = () => {
       { str: "1 + (3, 4) + 5", expect: 10 },
     ]
       .map((test) => {
-        const actual = CEq.parse(test.str).calc();
+        const actual = CEq.parse(test.str, scan).calc();
         const pass = Math.abs(test.expect - actual) < 1e-12;
         if (!pass) {
           console.log(`${pass ? "ok  " : "FAIL"} ${test.str} ${actual}`);

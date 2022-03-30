@@ -1,18 +1,9 @@
-import { TokenType } from "./IToken";
-import { constants, argops } from "./constants";
-import { TExecCollection } from "./IExec";
+import { collectionRegex } from "./collectionRegex";
+import { argops, constants } from "./constants";
+import { IToken, TokenType } from "./IToken";
+import { TLexer } from "./TLexer";
 
-/** Generate a regular expression from the collection keys. */
-const collectionRegex = (collection: TExecCollection | object): RegExp => {
-  const keys = Object.keys(collection)
-    .sort((a, b) =>
-      a.length === b.length ? a.localeCompare(b) : b.length - a.length
-    )
-    .map((key) => key.replace(/[!]/g, (m) => `\\${m}`));
-  return new RegExp(`^(${keys.join("|")})(?:[^A-Za-z]|$)`);
-};
-
-const regex: { [key: string]: RegExp } = {
+const regex: { [key in TokenType]: RegExp } = {
   /** Blank. */
   [TokenType.Blank]: /^\s+/,
   /** Number e.g. 1.234e12 (excludes negative sign). */
@@ -34,15 +25,22 @@ const regex: { [key: string]: RegExp } = {
 /**
  * Scan within the source equation for the token type, returning the matched
  * string or NULL if no match is found.
- * @param str Source string to scan.
- * @param start Position in string where to match.
- * @param lookFor Type of token to scan for.
+ * @param src Source string to scan.
+ * @param position Position in string where to match.
+ * @param type Type of token to scan for.
  */
-export const scan = (
-  str: string,
-  start: number,
-  lookFor: TokenType
-): string | null => {
-  const match = regex[lookFor].exec(str.substring(start));
-  return match && (match[1] || match[0]);
+export const scan: TLexer = (
+  src: string,
+  position: number,
+  type: TokenType
+): IToken | null => {
+  const match = regex[type].exec(src.substring(position));
+  return (
+    match && {
+      position,
+      type: type,
+      match: match[1] || match[0],
+      length: (match[1] || match[0]).length,
+    }
+  );
 };
