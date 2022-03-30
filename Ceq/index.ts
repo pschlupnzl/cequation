@@ -1,12 +1,13 @@
 import CEq from "./Ceq";
 import { scan } from "./scan";
 import { scanLatex } from "./scanLatex";
-import { test_eval, test_parse, test_scan } from "./tests";
+import { test_eval, test_parse, test_parse_latex, test_scan } from "./tests";
 import Tree from "./Tree";
 
 test_scan();
 test_parse();
 test_eval();
+test_parse_latex();
 
 [
   // Tests.
@@ -33,7 +34,11 @@ test_eval();
   console.log(` = ` + eq.calc());
 });
 
-["1 2"].forEach((src) => {
+[
+  //
+  "1 * 2",
+  // "sin(2)"
+].forEach((src) => {
   const eq = CEq.parse(src, scanLatex).printSource().printTokens().printStack();
   console.log(` = ` + eq.calc());
 });

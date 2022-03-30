@@ -1,3 +1,5 @@
+import { collectionRegex } from "./collectionRegex";
+import { argops, constants } from "./constants";
 import { IToken, TokenType } from "./IToken";
 import { TLexer } from "./TLexer";
 
@@ -23,10 +25,24 @@ const latexMatcher: {
   /** Push, i.e. comma. */
   [TokenType.Push]: { regex: /^,/, create: (match) => match },
   /** Function, e.g. sin, cos, ... */
-  [TokenType.ArgOp]: null, // {regex: collectionRegex(argops),create: (match) => match},
+  [TokenType.ArgOp]: {
+    regex: collectionRegex(argops),
+    create: (match) => match,
+  },
   /** Constants, e.g. pi. */
-  [TokenType.Constant]: null, // {regex: collectionRegex(constants),create: (match) => match},
+  [TokenType.Constant]: {
+    regex: collectionRegex(constants),
+    create: (match) => match,
+  },
 };
+
+/** Candidates available for implicit multiplication, e.g. 2 sin(x). */
+const implicitMultiplication = [
+  TokenType.Number,
+  TokenType.Open,
+  TokenType.ArgOp,
+  TokenType.Constant,
+];
 
 /**
  * Scan within the source equation for the token type, returning the matched
@@ -41,16 +57,37 @@ export const scanLatex: TLexer = (
   type: TokenType
 ): IToken | null => {
   const matcher = latexMatcher[type];
-  let match = matcher.regex.exec(src.substring(position));
-  if (!match && type === TokenType.BinaryOp) {
-    // match = latexMatcher
-  }
-  return (
-    match && {
-      position,
-      type: type,
-      length: 1,
-      match: matcher.create(match[1] || match[0]),
+  try {
+    let match = matcher.regex.exec(src.substring(position));
+    if (!match) {
+      if (
+        type === TokenType.BinaryOp &&
+        implicitMultiplication.some((alt) => !!scanLatex(src, position, alt))
+      ) {
+        return {
+          position,
+          type: TokenType.BinaryOp,
+          length: 0,
+          match: "*",
+        };
+      }
     }
-  );
+
+    return (
+      match && {
+        position,
+        type: type,
+        length: (match[1] || match[0]).length,
+        match: matcher.create(match[1] || match[0]),
+      }
+    );
+  } catch (err) {
+    console.log(
+      `scanLatex ${type} ${src.substring(0, position)} →${src.substring(
+        position
+      )}`,
+      matcher
+    );
+    throw err;
+  }
 };

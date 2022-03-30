@@ -1,6 +1,7 @@
 import CEq from "./Ceq";
 import { TokenType } from "./IToken";
 import { scan } from "./scan";
+import { scanLatex } from "./scanLatex";
 
 /** Test the token scanner. */
 export const test_scan = () => {
@@ -102,82 +103,109 @@ export const test_parse = () => {
 export const test_eval = () => {
   console.log(
     [
-      { str: "1", expect: 1 },
-      { str: "1 + 2 * 3", expect: 7 },
-      { str: "1 + 2 - 3 + 4", expect: 4 },
-      { str: "1 - 2 - 3 - 4", expect: -8 },
-      { str: "1 + 2 - 3", expect: 0 },
-      { str: "1 - 3 + 2", expect: 0 },
-      { str: "1 / 2 * 3", expect: 1.5 },
-      { str: "1 * 3 / 2", expect: 1.5 },
-      { str: "1 / 2 / 2", expect: 0.25 },
-      { str: "2*-2", expect: -4 },
-      { str: "-2*2", expect: -4 },
-      { str: "-2*-2", expect: 4 },
-      { str: "2^3", expect: 8 },
-      { str: "2^3^4", expect: 4096 },
-      { str: "1 + +2", expect: 3 },
-      { str: "1 - +2", expect: -1 },
-      { str: "1 * +2", expect: 2 },
-      { str: "1 * -2", expect: -2 },
-      { str: "(1 + 2) * 3", expect: 9 },
-      { str: "9 - 2^2", expect: 5 },
-      { str: "3^2", expect: 9 },
-      { str: "-3^2", expect: -9 },
-      { str: "3^-2", expect: 1 / 9 },
-      { str: "3^(-2)", expect: 1 / 9 },
-      { str: "-3^-2", expect: -1 / 9 },
-      { str: "3 * (5 - 3) + (3 + 1)/-2", expect: 4 },
-      { str: "(3 + 1)/-2", expect: -2 },
-      { str: "pi", expect: 3.141592653589793 },
-      { str: "cos(0)", expect: 1 },
-      { str: "3 * (cos(0) + sin(0))", expect: 3 },
-      { str: "3 * (5 - 3) + (3 + 1)/2", expect: 8 },
-      { str: "sin(pi)", expect: 0 },
-      { str: "cos(3*pi/2)", expect: 0 },
-      { str: "sqrt(4)", expect: 2 },
-      { str: "(5 + 11) /  (4 + 2*2)", expect: 2 },
-      { str: "3^(1+2)", expect: 27 },
-      { str: "sind(90)", expect: 1 },
-      { str: "abs(1)", expect: 1 },
-      { str: "abs(-1)", expect: 1 },
-      { str: "log(10)", expect: 2.302585092994046 },
-      { str: "log10(10)", expect: 1 },
-      { str: "!1", expect: 0 },
-      { str: "!!1", expect: 1 },
-      { str: "!(1 - 1)", expect: 1 },
-      { str: "sgn(-.1)", expect: -1 },
-      { str: "sgn(+.1)", expect: 1 },
-      { str: "sgn(0)", expect: 0 },
-      { str: "asin(sin(0.5))", expect: 0.5 },
-      { str: "asind(sind(0.5))", expect: 0.5 },
-      { str: "atan2(1,1)", expect: Math.PI / 4 },
-      { str: "atan2d(1,1)", expect: 45 },
-      { str: "atan2d(2,(13, 1+1))", expect: 45 },
-      { str: "ceil(0.1)", expect: 1 },
-      { str: "floor(0.9)", expect: 0 },
-      { str: "round(0.4)", expect: 0 },
-      { str: "round(0.5)", expect: 1 },
-      { str: "max(3,2)", expect: 3 },
-      { str: "max(2,3)", expect: 3 },
-      { str: "max(3)", expect: 3 },
-      { str: "max(1,3,2)", expect: 3 },
-      { str: "5,max(1,3,2)", expect: 3 },
-      { str: "5,max(1,3,2),-1", expect: -1 },
-      { str: "max(5,0),max(0,1)", expect: 1 },
-      { str: "max(3,(12, 0),-4)", expect: 3 },
-      { str: "2,3", expect: 3 },
-      { str: "1 + 3, 4 + 5", expect: 9 },
-      { str: "1 + (3, 4) + 5", expect: 10 },
+      { src: "1", expect: 1 },
+      { src: "1 + 2 * 3", expect: 7 },
+      { src: "1 + 2 - 3 + 4", expect: 4 },
+      { src: "1 - 2 - 3 - 4", expect: -8 },
+      { src: "1 + 2 - 3", expect: 0 },
+      { src: "1 - 3 + 2", expect: 0 },
+      { src: "1 / 2 * 3", expect: 1.5 },
+      { src: "1 * 3 / 2", expect: 1.5 },
+      { src: "1 / 2 / 2", expect: 0.25 },
+      { src: "2*-2", expect: -4 },
+      { src: "-2*2", expect: -4 },
+      { src: "-2*-2", expect: 4 },
+      { src: "2^3", expect: 8 },
+      { src: "2^3^4", expect: 4096 },
+      { src: "1 + +2", expect: 3 },
+      { src: "1 - +2", expect: -1 },
+      { src: "1 * +2", expect: 2 },
+      { src: "1 * -2", expect: -2 },
+      { src: "(1 + 2) * 3", expect: 9 },
+      { src: "9 - 2^2", expect: 5 },
+      { src: "3^2", expect: 9 },
+      { src: "-3^2", expect: -9 },
+      { src: "3^-2", expect: 1 / 9 },
+      { src: "3^(-2)", expect: 1 / 9 },
+      { src: "-3^-2", expect: -1 / 9 },
+      { src: "3 * (5 - 3) + (3 + 1)/-2", expect: 4 },
+      { src: "(3 + 1)/-2", expect: -2 },
+      { src: "pi", expect: 3.141592653589793 },
+      { src: "cos(0)", expect: 1 },
+      { src: "3 * (cos(0) + sin(0))", expect: 3 },
+      { src: "3 * (5 - 3) + (3 + 1)/2", expect: 8 },
+      { src: "sin(pi)", expect: 0 },
+      { src: "cos(3*pi/2)", expect: 0 },
+      { src: "sqrt(4)", expect: 2 },
+      { src: "(5 + 11) /  (4 + 2*2)", expect: 2 },
+      { src: "3^(1+2)", expect: 27 },
+      { src: "sind(90)", expect: 1 },
+      { src: "abs(1)", expect: 1 },
+      { src: "abs(-1)", expect: 1 },
+      { src: "log(10)", expect: 2.302585092994046 },
+      { src: "log10(10)", expect: 1 },
+      { src: "!1", expect: 0 },
+      { src: "!!1", expect: 1 },
+      { src: "!(1 - 1)", expect: 1 },
+      { src: "sgn(-.1)", expect: -1 },
+      { src: "sgn(+.1)", expect: 1 },
+      { src: "sgn(0)", expect: 0 },
+      { src: "asin(sin(0.5))", expect: 0.5 },
+      { src: "asind(sind(0.5))", expect: 0.5 },
+      { src: "atan2(1,1)", expect: Math.PI / 4 },
+      { src: "atan2d(1,1)", expect: 45 },
+      { src: "atan2d(2,(13, 1+1))", expect: 45 },
+      { src: "ceil(0.1)", expect: 1 },
+      { src: "floor(0.9)", expect: 0 },
+      { src: "round(0.4)", expect: 0 },
+      { src: "round(0.5)", expect: 1 },
+      { src: "max(3,2)", expect: 3 },
+      { src: "max(2,3)", expect: 3 },
+      { src: "max(3)", expect: 3 },
+      { src: "max(1,3,2)", expect: 3 },
+      { src: "5,max(1,3,2)", expect: 3 },
+      { src: "5,max(1,3,2),-1", expect: -1 },
+      { src: "max(5,0),max(0,1)", expect: 1 },
+      { src: "max(3,(12, 0),-4)", expect: 3 },
+      { src: "2,3", expect: 3 },
+      { src: "1 + 3, 4 + 5", expect: 9 },
+      { src: "1 + (3, 4) + 5", expect: 10 },
     ]
       .map((test) => {
-        const actual = CEq.parse(test.str, scan).calc();
+        const actual = CEq.parse(test.src, scan).calc();
         const pass = Math.abs(test.expect - actual) < 1e-12;
         if (!pass) {
-          console.log(`${pass ? "ok  " : "FAIL"} ${test.str} ${actual}`);
+          console.log(`${pass ? "ok  " : "FAIL"} ${test.src} ${actual}`);
         }
         return { pass };
       })
       .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) + " passed eval"
+  );
+};
+
+/** Test the LaTeX parsing. */
+export const test_parse_latex = () => {
+  console.log(
+    [
+      { src: "1 * 2", expect: ["1", "2", "*"] },
+      { src: "1 2", expect: ["1", "2", "*"] },
+      // {src: "sin(3)", expect: ["3", "sin"]},
+      // {src: "2 sin(3)", expect: ["2", "3", "sin", "*"]},
+    ]
+      .map((test) => {
+        const actual = CEq.parse(test.src, scanLatex)._stack.map(
+          (tok) => tok.match
+        );
+        const pass = test.expect.every(
+          (expect, index) => expect === actual[index]
+        );
+        if (!pass) {
+          console.log(
+            `${pass ? "ok  " : "FAIL"} ${test.src} ${actual.join(", ")}`
+          );
+        }
+        return { pass };
+      })
+      .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) + " passed parse"
   );
 };
