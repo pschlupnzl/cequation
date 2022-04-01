@@ -25,8 +25,6 @@ export interface IToken {
   position: number;
   /** The matched token string. */
   match: string;
-  /** The number of characters in the source string. */
-  length: number;
   /** Precedence elevated by brackets. */
   bracket?: number;
   /** Number of arguments for vari-arg operators. */

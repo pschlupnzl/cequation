@@ -1,5 +1,10 @@
 import { IToken, TokenType } from "./IToken";
 
+export interface ILexerScan {
+  skip: number;
+  tokens: IToken[];
+}
+
 /**
  * Lexer function that scans the source text at the given location and returns
  * the read token.
@@ -11,4 +16,4 @@ export type TLexer = (
   src: string,
   position: number,
   context: TokenType
-) => IToken | null;
+) => ILexerScan | undefined;

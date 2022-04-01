@@ -10,40 +10,43 @@ export const test_scan = () => {
       {
         context: TokenType.Blank,
         tests: [
-          { str: "", expect: undefined },
-          { str: " ", expect: " " },
-          { str: "  ", expect: "  " },
-          { str: "   ", expect: "   " },
+          { str: "", expect: [undefined] },
+          { str: " ", expect: [" "] },
+          { str: "  ", expect: ["  "] },
+          { str: "   ", expect: ["   "] },
         ],
       },
       {
         context: TokenType.Number,
         tests: [
-          { str: "1", expect: "1" },
-          { str: "12", expect: "12" },
-          { str: "2.", expect: "2." },
-          { str: "2.3", expect: "2.3" },
-          { str: ".3", expect: ".3" },
-          { str: "0.3", expect: "0.3" },
-          { str: "00000.30000", expect: "00000.30000" },
-          { str: "1e10", expect: "1e10" },
-          { str: "1e1.234", expect: "1e1" },
-          { str: ".", expect: undefined },
-          { str: "", expect: undefined },
-          { str: "a", expect: undefined },
-          { str: "-1", expect: undefined },
+          { str: "1", expect: ["1"] },
+          { str: "12", expect: ["12"] },
+          { str: "2.", expect: ["2."] },
+          { str: "2.3", expect: ["2.3"] },
+          { str: ".3", expect: [".3"] },
+          { str: "0.3", expect: ["0.3"] },
+          { str: "00000.30000", expect: ["00000.30000"] },
+          { str: "1e10", expect: ["1e10"] },
+          { str: "1e1.234", expect: ["1e1"] },
+          { str: ".", expect: [undefined] },
+          { str: "", expect: [undefined] },
+          { str: "a", expect: [undefined] },
+          { str: "pi", expect: ["pi"] },
+          { str: "-1", expect: ["-"] },
         ],
       },
     ]
       .map((suite) => {
         const passes = suite.tests.map(
-          (test: { str: string; expect: string | number }) => {
-            const actual = scan(test.str, 0, suite.context);
-            const pass = test.expect === actual?.match;
+          (test: { str: string; expect: string[] }) => {
+            const actual = scan(test.str, 0, suite.context)?.tokens || [];
+            const pass = test.expect.every(
+              (expect, index) => expect === actual[index]?.match
+            );
             if (!pass) {
               console.log(
                 `${pass ? "pass" : "FAIL"} ${suite.context} ${test.str} "${
-                  actual || ""
+                  JSON.stringify(actual) || ""
                 }"`
               );
             }
@@ -82,7 +85,134 @@ export const test_parse = () => {
         src: "3 * (5 - 3) + (3 + 1)/2",
         expect: ["3", "5", "3", "-", "*", "3", "1", "+", "2", "/", "+"],
       },
+
+      { src: "2*-2", expect: ["2", "-1", "*", "2", "*"] },
+      { src: "1 * sin(2)", expect: ["1", "2", "sin", "*"] },
+      { src: "1 * -2", expect: ["1", "-1", "*", "2", "*"] },
+      {
+        src: "3 * -6*(5 - max(3,5,6)) + (3 + 1 + -7)/-2",
+        expect: [
+          "3",
+          "-1",
+          "*",
+          "6",
+          "*",
+          "5",
+          "3",
+          "5",
+          "6",
+          "max",
+          "-",
+          "*",
+          "3",
+          "1",
+          "+",
+          "-1",
+          "7",
+          "*",
+          "+",
+          "-1",
+          "2",
+          "*",
+          "/",
+          "+",
+        ],
+      },
+      {
+        src: "3 *(3 + 1 + -7)/-2",
+        expect: [
+          "3",
+          "3",
+          "1",
+          "+",
+          "-1",
+          "7",
+          "*",
+          "+",
+          "-1",
+          "2",
+          "*",
+          "/",
+          "*",
+        ],
+      },
+      { src: "max(1,3,4)", expect: ["1", "3", "4", "max"] },
+      {
+        src: "2*3/4*(6*5)/-(7*2^-2)",
+        expect: [
+          "2",
+          "3",
+          "4",
+          "/",
+          "*",
+          "6",
+          "5",
+          "*",
+          "-1",
+          "7",
+          "*",
+          "2",
+          "-1",
+          "2",
+          "*",
+          "^",
+          "*",
+          "/",
+          "*",
+        ],
+      },
+      { src: "2*3", expect: ["2", "3", "*"] },
+      { src: "2 * 3 * 4", expect: ["2", "3", "*", "4", "*"] },
+      { src: "24 / 3 / (2*2)", expect: ["24", "3", "/", "2", "2", "*", "/"] },
+      {
+        src: "1 - 2 - 3 + 4 - 5",
+        expect: ["1", "2", "-", "3", "-", "4", "5", "-", "+"],
+      },
+      {
+        src: "2^2^2 - (2 * 2) * (2 * 2)",
+        expect: [
+          "2",
+          "2",
+          "^",
+          "2",
+          "^",
+          "2",
+          "2",
+          "*",
+          "2",
+          "2",
+          "*",
+          "*",
+          "-",
+        ],
+      },
+      {
+        src: "( 1 + 2)/(3 + 4) * (5 + 6) / (7 - 8)",
+        expect: [
+          "1",
+          "2",
+          "+",
+          "3",
+          "4",
+          "+",
+          "/",
+          "5",
+          "6",
+          "+",
+          "7",
+          "8",
+          "-",
+          "/",
+          "*",
+        ],
+      },
+      { src: "24 * 2 / 3", expect: ["24", "2", "3", "/", "*"] },
+      { src: "max(1,2,3)", expect: ["1", "2", "3", "max"] },
+      { src: "(3 + 1)/-2", expect: ["3", "1", "+", "-1", "2", "*", "/"] },
+      { src: "1+2", expect: ["1", "2", "+"] },
+      { src: "sin(3)", expect: ["3", "sin"] },
     ]
+
       .map((test) => {
         const actual = CEq.parse(test.src, scan)._stack.map((tok) => tok.match);
         const pass = test.expect.every(
@@ -189,7 +319,8 @@ export const test_parse_latex = () => {
     [
       { src: "1 * 2", expect: ["1", "2", "*"] },
       { src: "1 2", expect: ["1", "2", "*"] },
-      // {src: "sin(3)", expect: ["3", "sin"]},
+      { src: "\\sin(3)", expect: ["3", "sin"] },
+      { src: "1 + \\sin(3)", expect: ["1", "3", "sin", "+"] },
       // {src: "2 sin(3)", expect: ["2", "3", "sin", "*"]},
     ]
       .map((test) => {

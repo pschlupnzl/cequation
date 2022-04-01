@@ -1,47 +1,15 @@
 import { constants, execs } from "./constants";
 import { IExec } from "./IExec";
 import { IToken, IValueToken, TokenType } from "./IToken";
+import { IParserOptions } from "./models/IParserOptions";
 import { flush, opArgs } from "./precedence";
+import { standardTokens } from "./scan";
 import { TLexer } from "./TLexer";
 
 /**
  * Class to process equations.
  */
 class CEq {
-  /**
-   * Order in which to scan for tokens. The order only matters in those cases
-   * where the tokens would look the same.
-   */
-  private static scanOrder: { [key: string]: TokenType[] } = {
-    [TokenType.Number]: [
-      TokenType.Number,
-      TokenType.BinaryOp,
-      TokenType.Open,
-      TokenType.Close,
-      TokenType.Push,
-      TokenType.ArgOp,
-      TokenType.Constant,
-    ],
-    [TokenType.BinaryOp]: [TokenType.BinaryOp, TokenType.Push, TokenType.Close],
-    [TokenType.Open]: [TokenType.Open],
-  };
-
-  /** Negation: -2^2 = -4 (see Matlab), so handle negative as (-1)×. */
-  private static negate: { [key: string]: IToken } = {
-    value: {
-      type: TokenType.Number,
-      match: "-1",
-      length: 0,
-      position: 0,
-    },
-    op: {
-      type: TokenType.BinaryOp,
-      match: "*",
-      length: 1,
-      position: 0,
-    },
-  };
-
   /** Source string. */
   private _src: string = "";
   /** Parsed tokens. */
@@ -88,7 +56,11 @@ class CEq {
   /**
    * Parse a string of the form 1 + 2 * sin(pi / 4).
    */
-  public static parse(src: string, lexer: TLexer): CEq {
+  public static parse(
+    src: string,
+    lexer: TLexer,
+    options?: IParserOptions
+  ): CEq {
     /** Input tokens. */
     const tokens: IToken[] = [];
     /** Assembling RPN stack. */
@@ -105,98 +77,102 @@ class CEq {
       let context: TokenType = TokenType.Number;
       for (position = 0; position < src.length; ) {
         // Skip blanks.
-        let token = lexer(src, position, TokenType.Blank);
-        if (token && token.length) {
-          position += token.length;
+        let scan = lexer(src, position, TokenType.Blank);
+        if (scan && scan.skip) {
+          position += scan.skip;
           continue;
         }
 
         // Scan for expected token.
-        for (let type of CEq.scanOrder[context]) {
-          token = lexer(src, position, type);
-          if (!!token) {
-            break;
+        scan = lexer(src, position, context);
+        if (!scan) {
+          throw new Error(`Empty scan, expected ${context}`);
+        }
+        position += scan.skip;
+
+        for (let token of scan.tokens) {
+          // Process the token.
+          tokens.push(token);
+
+          // Special handling.
+          if (
+            context === TokenType.Number &&
+            token.type === TokenType.BinaryOp
+          ) {
+            if (token.match === "-") {
+              // Handle special-case "-" as negation.
+              // Following exponent, boost priority: 3^-2 = 3^(-2).
+              const boost = "/^".includes(ops[ops.length - 1]?.match)
+                ? bracket + 1
+                : bracket;
+              stack.push({
+                ...standardTokens.negativeOne,
+                position,
+                bracket: boost,
+              });
+              flush(
+                { ...standardTokens.multiply, position },
+                stack,
+                ops,
+                boost
+              );
+              continue;
+            } else if (token.match === "+") {
+              // Positive unary; noop.
+              continue;
+            } else {
+              throw new Error(`Unexpected ${token.type} ${token.match}`);
+            }
           }
-        }
-        if (!token) {
-          throw new Error(`Expected ${context}`);
-        }
-        position += token.length;
 
-        // Process the token.
-        tokens.push(token);
-        switch (context) {
-          case TokenType.Number:
-            switch (token.type) {
-              case TokenType.Number:
-              case TokenType.Constant:
-                stack.push({ ...token, bracket });
-                context = TokenType.BinaryOp;
-                break;
-              case TokenType.Open:
-                bracket += 1;
-                break;
-              case TokenType.ArgOp:
-                ops.push({ ...token, bracket });
-                if (token.match !== "!") {
-                  // NOT operator doesn't take brackets.
-                  context = TokenType.Open;
-                }
-                break;
-              case TokenType.BinaryOp:
-                if (token.match === "-") {
-                  // Handle special-case "-" as negation.
-                  // Following exponent, boost priority: 3^-2 = 3^(-2).
-                  const boost = "/^".includes(ops[ops.length - 1]?.match)
-                    ? bracket + 1
-                    : bracket;
-                  stack.push({
-                    ...CEq.negate.value,
-                    position,
-                    bracket: boost,
-                  });
-                  flush({ ...CEq.negate.op, position }, stack, ops, boost);
-                } else if (token.match === "+") {
-                  // Positive unary; noop.
-                } else {
-                  throw new Error(`Unexpected ${token.type} ${token.match}`);
-                }
-                break;
-              default:
-                throw new Error(`Unhandled ${context} ${token.type}`);
-            }
-            break;
+          // Implicit multiplication.
+          if (
+            options?.implicitMultiplication &&
+            context === TokenType.BinaryOp &&
+            (token.type === TokenType.Number ||
+              token.type === TokenType.Constant ||
+              token.type === TokenType.ArgOp)
+          ) {
+            flush(
+              { ...standardTokens.multiply, position, bracket },
+              stack,
+              ops,
+              bracket
+            );
+          }
 
-          case TokenType.BinaryOp:
-            switch (token.type) {
-              case TokenType.BinaryOp:
-                flush(token, stack, ops, bracket);
-                context = TokenType.Number;
-                break;
-              case TokenType.Push:
-                flush(token, stack, ops, bracket);
-                context = TokenType.Number;
-                break;
-              case TokenType.Close:
-                bracket -= 1;
-                break;
-              default:
-                throw new Error(`Unhandled ${context} ${token.type}`);
-            }
-            break;
-
-          case TokenType.Open:
-            switch (token.type) {
-              case TokenType.Open:
-                bracket += 1;
-                context = TokenType.Number;
-                break;
-              default:
-                throw new Error("Expected -(-");
-            }
-            break;
-          default:
-            throw new Error(`not yet implemented: ${context}`);
+          // Handling of tokens.
+          switch (token.type) {
+            case TokenType.Number:
+            case TokenType.Constant:
+              stack.push({ ...token, bracket });
+              context = TokenType.BinaryOp;
+              break;
+            case TokenType.Open:
+              bracket += 1;
+              context = TokenType.Number;
+              break;
+            case TokenType.ArgOp:
+              ops.push({ ...token, bracket });
+              if (token.match !== "!") {
+                // NOT operator doesn't take brackets.
+                context = TokenType.Open;
+              }
+              break;
+            case TokenType.BinaryOp:
+              flush(token, stack, ops, bracket);
+              context = TokenType.Number;
+              break;
+            case TokenType.Push:
+              flush(token, stack, ops, bracket);
+              context = TokenType.Number;
+              break;
+            case TokenType.Close:
+              bracket -= 1;
+              break;
+            default:
+              throw new Error(`Expected ${context}`);
+          }
         }
       }
       flush(null, stack, ops, bracket);
