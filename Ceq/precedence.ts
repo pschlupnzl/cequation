@@ -12,13 +12,13 @@ const precedence = {
 
 /**
  * Handle operator precedence, consolidating stack and ops.
- * @param token Token being added. May be NULL when flushing at end of parse.
+ * @param newToken Token being added. May be NULL when flushing at end of parse.
  * @param stack Stack of tokens where to push pending operations.
  * @param ops Stack of operations to check and flush.
  * @param bracket Bracket level being flushed.
  */
 export const flush = (
-  token: IToken | null,
+  newToken: IToken | null,
   stack: IToken[],
   ops: IToken[],
   bracket: number
@@ -27,20 +27,22 @@ export const flush = (
     const prev = ops[ops.length - 1];
     if (
       // Flush all at end.
-      !token ||
+      !newToken ||
       // Flush all higher bracket levels.
       prev.bracket > bracket ||
       // Flush all higher precedence operators at this bracket.
       (prev.bracket === bracket &&
-        precedence[prev.match] >= precedence[token.match])
+        (precedence[prev.match] >= precedence[newToken.match] ||
+          // Operators with arguments (i.e., functions) have higher precedence.
+          prev.type === TokenType.ArgOp))
     ) {
       stack.push(ops.pop());
     } else {
       break;
     }
   }
-  if (token) {
-    ops.push({ ...token, bracket });
+  if (newToken) {
+    ops.push({ ...newToken, bracket });
   }
 };
 

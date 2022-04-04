@@ -212,6 +212,7 @@ export const test_parse = () => {
       { src: "1+2", expect: ["1", "2", "+"] },
       { src: "sin(3)", expect: ["3", "sin"] },
       { src: "sqrt(9) * 2", expect: ["9", "sqrt", "2", "*"] },
+      { src: "sqrt(4) * sqrt(9)", expect: ["4", "sqrt", "9", "sqrt", "*"] },
     ]
 
       .map((test) => {

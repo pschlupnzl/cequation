@@ -28,7 +28,8 @@ test_latex_eval();
   // "24 * 2 / 3",
   // "8^(1/3)"
   // "nrt(3, 8)"
-  "sqrt(9)*2"
+  "sqrt(9)*sqrt(16)"
+  // "sin(pi/2)*3"
 ].forEach((src) => {
   const eq = CEq.parse(src, scan).printSource().printTokens().printStack();
   Tree.from(eq).print().calc().simplify().print().calc();
@@ -45,7 +46,7 @@ test_latex_eval();
   // "\\pi", // expect: 3.141592653589793
   // "\\frac{1}{2}",
   // "\\sqrt 4"
-  "\\sqrt 92"
+  // "\\sqrt 92"
   // "\\sqrt[3]{8}", // expect: 2 expect: ["8","1","3","/","^"]
   // "2^{1 + 3}"
   // "2_1"
