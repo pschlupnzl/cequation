@@ -4,7 +4,7 @@ import { IToken, IValueToken, TokenType } from "./IToken";
 import { IParserOptions } from "./models/IParserOptions";
 import { flush, opArgs } from "./precedence";
 import { standardTokens } from "./scan";
-import { TLexer } from "./TLexer";
+import { TLexer, TScanState } from "./TLexer";
 
 /**
  * Class to process equations.
@@ -71,20 +71,20 @@ class CEq {
     let bracket = 0;
     /** Hold process position for error handling. */
     let position: number;
-    // /** Token matching. */
-    // let match: string;
+    /** State available to the parser. */
+    const state: TScanState = {};
     try {
       let context: TokenType = TokenType.Number;
       for (position = 0; position < src.length; ) {
         // Skip blanks.
-        let scan = lexer(src, position, TokenType.Blank);
+        let scan = lexer(src, position, TokenType.Blank, state);
         if (scan && scan.skip) {
           position += scan.skip;
           continue;
         }
 
         // Scan for expected token.
-        scan = lexer(src, position, context);
+        scan = lexer(src, position, context, state);
         if (!scan) {
           throw new Error(`Empty scan, expected ${context}`);
         }
@@ -125,7 +125,8 @@ class CEq {
             }
           }
 
-          // Implicit multiplication.
+          // Implicit multiplication. This is handled here because we need to
+          // flush operations at the current bracket level.
           if (
             options?.implicitMultiplication &&
             context === TokenType.BinaryOp &&

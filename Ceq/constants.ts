@@ -41,6 +41,7 @@ export const argops: TExecCollection = {
   "!": { narg: 1, f: (x) => (x === 0 ? 1 : 0) },
   sgn: { narg: 1, f: (x) => (x < 0 ? -1 : x > 0 ? 1 : 0) },
   mod: { narg: 2, f: (a, b) => a % b },
+  nrt: { narg: 2, f: (a, b) => Math.pow(b, 1 / a) },
 
   max: { narg: -1, f: (...args) => Math.max(...args) },
   min: { narg: -1, f: (...args) => Math.min(...args) },
@@ -55,8 +56,3 @@ export const execs: TExecCollection = {
   "/": { narg: 2, f: (a, b) => a / b },
   "^": { narg: 2, f: (a, b) => Math.pow(a, b) },
 };
-
-/** LaTeX functions and their equivalents. */
-export const latexops = {
-  "\\sin": "sin"
-}

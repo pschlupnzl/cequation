@@ -39,7 +39,7 @@ export const test_scan = () => {
       .map((suite) => {
         const passes = suite.tests.map(
           (test: { str: string; expect: string[] }) => {
-            const actual = scan(test.str, 0, suite.context)?.tokens || [];
+            const actual = scan(test.str, 0, suite.context, {})?.tokens || [];
             const pass = test.expect.every(
               (expect, index) => expect === actual[index]?.match
             );
@@ -211,6 +211,7 @@ export const test_parse = () => {
       { src: "(3 + 1)/-2", expect: ["3", "1", "+", "-1", "2", "*", "/"] },
       { src: "1+2", expect: ["1", "2", "+"] },
       { src: "sin(3)", expect: ["3", "sin"] },
+      { src: "sqrt(9) * 2", expect: ["9", "sqrt", "2", "*"] },
     ]
 
       .map((test) => {
@@ -220,7 +221,7 @@ export const test_parse = () => {
         );
         if (!pass) {
           console.log(
-            `${pass ? "ok  " : "FAIL"} ${test.src} ${actual.join(", ")}`
+            `${pass ? "ok  " : "FAIL"} "${test.src}": ${actual.join(", ")}`
           );
         }
         return { pass };
@@ -300,12 +301,13 @@ export const test_eval = () => {
       { src: "2,3", expect: 3 },
       { src: "1 + 3, 4 + 5", expect: 9 },
       { src: "1 + (3, 4) + 5", expect: 10 },
+      { src: "sqrt(9)*2", expect: 6 },
     ]
       .map((test) => {
         const actual = CEq.parse(test.src, scan).calc();
         const pass = Math.abs(test.expect - actual) < 1e-12;
         if (!pass) {
-          console.log(`${pass ? "ok  " : "FAIL"} ${test.src} ${actual}`);
+          console.log(`${pass ? "ok  " : "FAIL"} "${test.src}": ${actual}`);
         }
         return { pass };
       })
@@ -314,14 +316,20 @@ export const test_eval = () => {
 };
 
 /** Test the LaTeX parsing. */
-export const test_parse_latex = () => {
+export const test_latex_parse = () => {
   console.log(
     [
-      { src: "1 * 2", expect: ["1", "2", "*"] },
+      { src: "1 \\times 2", expect: ["1", "2", "*"] },
       { src: "1 2", expect: ["1", "2", "*"] },
       { src: "\\sin(3)", expect: ["3", "sin"] },
       { src: "1 + \\sin(3)", expect: ["1", "3", "sin", "+"] },
-      // {src: "2 sin(3)", expect: ["2", "3", "sin", "*"]},
+      { src: "\\pi", expect: ["pi"] },
+      { src: "\\frac{1}{2}", expect: ["1", "2", "/"] },
+      { src: "\\sqrt{4}", expect: ["4", "sqrt"] },
+      { src: "\\sqrt 4", expect: ["4", "sqrt"] },
+      { src: "\\sqrt 92", expect: ["9", "sqrt", "2", "*"] },
+      { src: "2\\sqrt 9", expect: ["2", "9", "sqrt", "*"] },
+      { src: "2\\sqrt 9", expect: ["2", "9", "sqrt", "*"] },
     ]
       .map((test) => {
         const actual = CEq.parse(test.src, scanLatex)._stack.map(
@@ -332,11 +340,45 @@ export const test_parse_latex = () => {
         );
         if (!pass) {
           console.log(
-            `${pass ? "ok  " : "FAIL"} ${test.src} ${actual.join(", ")}`
+            `${pass ? "ok  " : "FAIL"} "${test.src}": ${actual.join(", ")}`
           );
         }
         return { pass };
       })
-      .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) + " passed parse"
+      .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) +
+      " passed LaTeX parse"
+  );
+};
+
+export const test_latex_eval = () => {
+  console.log(
+    [
+      { src: "2 \\times 3", expect: 6 },
+      { src: "1 + \\sin(2)", expect: 1.9092974268256817 },
+      { src: "2 \\sin(3)", expect: 0.2822400161197344 },
+      { src: "-2 \\times 3", expect: -6 },
+      {
+        src: "2\\times 3/4\\times (6\\times 5)/-(7\\times 2^-2)",
+        expect: -25.714285714285715,
+      },
+      { src: "\\pi", expect: 3.141592653589793 },
+      { src: "\\frac{1}{2}", expect: 0.5 },
+      { src: "\\sqrt{4}", expect: 2 },
+      { src: "\\sqrt 4", expect: 2 },
+      { src: "\\sqrt 92", expect: 6 },
+      { src: "2\\sqrt 9", expect: 6 },
+      { src: "3\\sqrt{9}", expect: 9 },
+      { src: "2^{1 + 3}", expect: 16 },
+    ]
+      .map((test) => {
+        const actual = CEq.parse(test.src, scanLatex).calc();
+        const pass = Math.abs(test.expect - actual) < 1e-12;
+        if (!pass) {
+          console.log(`${pass ? "ok  " : "FAIL"} "${test.src}": ${actual}`);
+        }
+        return { pass };
+      })
+      .reduce((acc, curr) => acc + (curr.pass ? 1 : 0), 0) +
+      " passed LaTeX eval"
   );
 };

@@ -5,6 +5,9 @@ export interface ILexerScan {
   tokens: IToken[];
 }
 
+/** State maintained between calls to scan. */
+export type TScanState = object;
+
 /**
  * Lexer function that scans the source text at the given location and returns
  * the read token.
@@ -15,5 +18,6 @@ export interface ILexerScan {
 export type TLexer = (
   src: string,
   position: number,
-  context: TokenType
+  context: TokenType,
+  state: TScanState
 ) => ILexerScan | undefined;
