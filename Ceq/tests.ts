@@ -331,6 +331,8 @@ export const test_latex_parse = () => {
       { src: "\\sqrt 92", expect: ["9", "sqrt", "2", "*"] },
       { src: "2\\sqrt 9", expect: ["2", "9", "sqrt", "*"] },
       { src: "2\\sqrt 9", expect: ["2", "9", "sqrt", "*"] },
+      { src: "2_1", expect: ["2", "1", "_"] },
+      { src: "2_{1 + 4}", expect: ["2", "1", "4", "+", "_"] },
     ]
       .map((test) => {
         const actual = CEq.parse(test.src, scanLatex)._stack.map(
@@ -369,7 +371,11 @@ export const test_latex_eval = () => {
       { src: "\\sqrt 92", expect: 6 },
       { src: "2\\sqrt 9", expect: 6 },
       { src: "3\\sqrt{9}", expect: 9 },
+      { src: "\\sqrt[3]{8}", expect: 2 },
       { src: "2^{1 + 3}", expect: 16 },
+      { src: "-2^{1 + 3}", expect: -16 },
+      { src: "2_1", expect: 2 },
+      { src: "2_{1 + 4}", expect: 2 },
     ]
       .map((test) => {
         const actual = CEq.parse(test.src, scanLatex).calc();

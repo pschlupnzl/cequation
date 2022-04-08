@@ -28,7 +28,7 @@ test_latex_eval();
   // "24 * 2 / 3",
   // "8^(1/3)"
   // "nrt(3, 8)"
-  "sqrt(9)*sqrt(16)"
+  // "sqrt(9)*sqrt(16)"
   // "sin(pi/2)*3"
 ].forEach((src) => {
   const eq = CEq.parse(src, scan).printSource().printTokens().printStack();
@@ -42,14 +42,14 @@ test_latex_eval();
   // "1 + \\sin(2)", // expect: 1.9092974268256817
   // '2 \\sin(3)', // expect: 0.2822400161197344
   // '-2 \\times 3', // expect: -6,
-  // "2\\times 3/4\\times (6\\times 5)/-(7\\times 2^-2)", // expect: -25.714285714285715
+  "2\\times 3/4\\times (6\\times 5)/-(7\\times 2^-2)", // expect: -25.714285714285715
   // "\\pi", // expect: 3.141592653589793
   // "\\frac{1}{2}",
   // "\\sqrt 4"
   // "\\sqrt 92"
-  // "\\sqrt[3]{8}", // expect: 2 expect: ["8","1","3","/","^"]
-  // "2^{1 + 3}"
-  // "2_1"
+  // "\\sqrt[3]{8}",
+  // "-2^{1 + 3}"
+  // "2_{1 + 4}"
   // "2^-1",
 ].forEach((src) => {
   const eq = CEq.parse(src, scanLatex, { implicitMultiplication: true })

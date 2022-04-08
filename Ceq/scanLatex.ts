@@ -1,5 +1,4 @@
 import { collectionRegex } from "./collectionRegex";
-import { argops, constants } from "./constants";
 import { IToken, TokenType } from "./IToken";
 import { ILexerScan, TLexer, TScanState } from "./TLexer";
 
@@ -31,7 +30,7 @@ const latexMatcher: { [key in TokenType]: ILatexMatcher } = {
     create: (match) => match,
   },
   /** Binary operator. */
-  [TokenType.BinaryOp]: { regex: /^(?:\+|\-|\\times|\/|\^)/ },
+  [TokenType.BinaryOp]: { regex: /^(?:\+|\-|\\times|\/|\^|_)/ },
   /** Open bracket. */
   [TokenType.Open]: { regex: /^\(/ },
   /** Open bracket. */
